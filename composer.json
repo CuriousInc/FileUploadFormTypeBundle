@@ -1,0 +1,15 @@
+{
+    "name": "curious-inc/file-upload-form-type-bundle",
+    "type": "symfony-package",
+    "require": {
+        "doctrine/orm": "2.4",
+        "oneup/uploader-bundle": "^2.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Webber",
+            "email": "webber.nl@gmail.com"
+        }
+    ]
+}
