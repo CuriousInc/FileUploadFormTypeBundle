@@ -1,0 +1,4 @@
+services:
+#    curious_inc_file_upload_form_type.example:
+#        class: CuriousInc\FileUploadFormTypeBundle\Example
+#        arguments: ["@service_id", "plain_value", "%parameter%"]
