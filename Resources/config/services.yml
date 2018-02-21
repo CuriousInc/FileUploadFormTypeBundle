@@ -1,4 +1,9 @@
 services:
-#    curious_inc_file_upload_form_type.example:
-#        class: CuriousInc\FileUploadFormTypeBundle\Example
-#        arguments: ["@service_id", "plain_value", "%parameter%"]
+    curious_inc_file_upload_form_type.dropzone_type:
+        class:  CuriousInc\FileUploadFormTypeBundle\Form\Type\DropzoneType
+        arguments:
+            - "@oneup_uploader.templating.uploader_helper"
+            - "@oneup_uploader.orphanage_manager"
+            - "@doctrine.orm.entity_manager"
+        tags:
+            - { name: form.type, alias: dropzone }
