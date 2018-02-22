@@ -8,15 +8,11 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Form\Type;
 
+use CuriousInc\FileUploadFormTypeBundle\Form\Transformer\FilesToEntitiesTransformer;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Templating\Helper\UploaderHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
-use Sonata\AdminBundle\Form\Type\ModelHiddenType;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\FormType;
-use Symfony\Component\Form\Extension\Core\Type\HiddenType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
@@ -60,20 +56,33 @@ class DropzoneType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        // Todo: add transformer from https://github.com/sopinet/UploadFilesBundle/blob/master/Form/Type/DropzoneType.php
-    }
+        $transformer = new FilesToEntitiesTransformer(
+            $this->objectManager,
+            $this->orphanageManager,
+            $builder->getName(),
+            $options['mappedBy']
+        );
 
-    public function configureOptions(OptionsResolver $resolver)
-    {
-        return [];
+        $builder->addModelTransformer($transformer);
     }
 
     /**
-     * @param OptionsResolver $resolver
+     * Backward compatibility for SF <= 2.6.
+     *
+     * {@inheritdoc}
      */
     public function setDefaultOptions(OptionsResolver $resolver)
     {
-        // Todo: strip what we don't need here
+        $this->configureOptions($resolver);
+    }
+
+    /**
+     * Configure options for this FormType
+     *
+     * {@inheritdoc}
+     */
+    public function configureOptions(OptionsResolver $resolver)
+    {
         $resolver->setDefaults(
             [
                 'attr'          => [

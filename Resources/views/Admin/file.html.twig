@@ -1,0 +1,46 @@
+{% extends 'SonataAdminBundle:CRUD:base_list_field.html.twig' %}
+
+{% block field %}
+  {{ block('sonata_uploadfile_'~attribute(admin, field_description.name~'UploadType')|default('default')) }}
+{% endblock %}
+
+{% block sonata_uploadfile_default %}
+  {% spaceless %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ asset('bundles/curiousincfileuploadformtype/css/dropzone.css') }}" />
+    {% set maxFiles=1 %}
+    {% set file = attribute(object, field_description.name) %}
+    {% if file is not null %}
+      <div class="dropzone dropzone-{{ file.id }}">
+      </div>
+      <script type="application/javascript">
+        jQuery.getScript("{{ asset('bundles/curiousincfileuploadformtype/js/dropzone.js') }}", function() {
+          Dropzone.autoDiscover = false;
+          $('.dropzone-{{ file.id }}').attr('action', "{{ oneup_uploader_endpoint("gallery") }}");
+          $('.dropzone-{{ file.id }}').css('pointer-events', "none");
+          $('.dropzone-{{ file.id }}').dropzone(
+            {
+              maxFiles: "{{ maxFiles }}",
+              addRemoveLinks: false,
+              init: function() {
+                {% if file is not null and file.getPath() is not null %}
+                var mockFile = { name: "{{ file.name }}", size: 12345, type: 'image/jpeg', id: '{{ file.id }}' };
+                this.addFile.call(this, mockFile);
+                this.options.thumbnail.call(this, mockFile, "{{ asset(file.getPath()) }}");
+                {% endif %}
+              }
+            }
+          );
+        });
+      </script>
+    {% endif %}
+  {% endspaceless %}
+{% endblock %}
+
+{% block sonata_uploadfile_pdf %}
+  {% set file = attribute(object, field_description.name) %}
+  {% if file is not null and file.getPath() is not null %}
+    <object data="{{ asset(file.path) }}" type="application/pdf">
+      <embed src="{{ asset(file.path) }}" type="application/pdf" />
+    </object>
+  {% endif %}
+{% endblock %}

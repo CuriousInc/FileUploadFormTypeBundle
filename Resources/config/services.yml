@@ -1,9 +1,21 @@
 services:
-    curious_inc_file_upload_form_type.dropzone_type:
+    curious_file_upload.dropzone_type:
         class:  CuriousInc\FileUploadFormTypeBundle\Form\Type\DropzoneType
         arguments:
-            - "@oneup_uploader.templating.uploader_helper"
-            - "@oneup_uploader.orphanage_manager"
-            - "@doctrine.orm.entity_manager"
+            - '@oneup_uploader.templating.uploader_helper'
+            - '@oneup_uploader.orphanage_manager'
+            - '@doctrine.orm.entity_manager'
         tags:
             - { name: form.type, alias: dropzone }
+
+    curious_file_upload.file_namer:
+        class: CuriousInc\FileUploadFormTypeBundle\Service\FileNamer
+
+    curious_file_upload.twig.uploader_extension:
+        class: CuriousInc\FileUploadFormTypeBundle\Twig\Extension\UploaderExtension
+        arguments:
+            - '@oneup_uploader.orphanage_manager'
+            - '@session'
+            - '%oneup_uploader.orphanage%'
+        tags:
+            - { name: twig.extension }

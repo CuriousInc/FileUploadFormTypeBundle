@@ -1,0 +1,121 @@
+{% extends 'form_div_layout.html.twig' %}
+
+{% block style_default %}
+  {% stylesheets
+    '@CuriousIncFileUploadFormTypeBundle/Resources/public/css/dropzone.css'
+    output='css/*.css' filter='cssrewrite' %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ asset_url }}" />
+  {% endstylesheets %}
+{% endblock %}
+
+{% block style_cropper %}
+  {% stylesheets
+    '@CuriousIncFileUploadFormTypeBundle/Resources/public/css/dropzone.css'
+    '@CuriousIncFileUploadFormTypeBundle/Resources/public/css/cropper.min.css'
+    output='css/*.css' filter='cssrewrite' %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ asset_url }}" />
+  {% endstylesheets %}
+{% endblock %}
+
+{% block style_rounded_cropper %}
+  {% stylesheets
+    '@CuriousIncFileUploadFormTypeBundle/Resources/public/css/dropzone.css'
+    '@CuriousIncFileUploadFormTypeBundle/Resources/public/css/cropper.min.css'
+    '@CuriousIncFileUploadFormTypeBundle/Resources/public/css/cropper.circle.min.css'
+    output='css/*.css' filter='cssrewrite' %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ asset_url }}" />
+  {% endstylesheets %}
+{% endblock %}
+
+{% block style_icon %}
+  {% stylesheets
+    '@CuriousIncFileUploadFormTypeBundle/Resources/public/css/dropzone.css'
+    '@CuriousIncFileUploadFormTypeBundle/Resources/public/css/iconic.css'
+    output='css/*.css' filter='cssrewrite' %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ asset_url }}" />
+  {% endstylesheets %}
+{% endblock %}
+
+{% block style_none %}{% endblock %}
+
+{# Type blocks #}
+{% block icon %}
+  <i {{ block('widget_container_attributes') }}>
+    {%- if form.parent is empty -%}
+      {{ form_errors(form) }}
+    {%- endif -%}
+    {{- block('form_rows') -}}
+    {{- form_rest(form) -}}
+  </i>
+{% endblock %}
+
+{% block crop %}
+  <div {{ block('widget_container_attributes') }}>
+    {%- if form.parent is empty -%}
+      {{ form_errors(form) }}
+    {%- endif -%}
+    {{- block('form_rows') -}}
+    {{- form_rest(form) -}}
+  </div>
+{% endblock %}
+
+{% block modal %}
+  <!-- Trigger the modal with a button -->
+  {% block modal_buton %}
+    <button type="button" class="{{ btnClass }}" data-toggle="modal" data-target="#{{ id }}_modal">{{ btnText }}</button>
+  {% endblock %}
+
+  <!-- Modal -->
+  <div id="{{ id }}_modal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal content-->
+      <div class="modal-content">
+        {% block modal_header %}
+        {% endblock %}
+        {% block modal_body %}
+          <div class="modal-body">
+            <div {{ block('widget_container_attributes') }}>
+              {%- if form.parent is empty -%}
+                {{ form_errors(form) }}
+              {%- endif -%}
+              {{- block('form_rows') -}}
+              {{- form_rest(form) -}}
+            </div>
+          </div>
+        {% endblock %}
+
+        {% block modal_footer %}
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">
+              {{ "curious_file_upload.modal.btn_accept"|trans }}
+            </button>
+          </div>
+        {% endblock %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block pdf_preview %}
+  {% set object = attribute(form.parent.vars.value, form.vars.name) %}
+  {% set simple = (object.getPath is defined) %}
+  {% if object and object is not null and simple %}
+    <object data="{{ asset(object.path) }}" type="application/pdf" {{ block('widget_attributes') }} >
+      <embed src="{{ asset(object.path) }}" type="application/pdf" />
+    </object>
+  {% elseif object is defined and not simple %}
+    {% for file in object %}
+      <object data="{{ asset(file.path) }}" type="application/pdf" {{ block('widget_attributes') }} >
+        <embed src="{{ asset(file.path) }}" type="application/pdf" />
+      </object>
+    {% endfor %}
+  {% endif %}
+{% endblock %}
+
+{% block dropzone_widget %}
+  {% spaceless %}
+    {{ block(style_type) }}
+    {% include '@CuriousIncFileUploadFormTypeBundle/Resources/views/Form/_common.html.twig' %}
+    {{ block(type) }}
+  {% endspaceless %}
+{% endblock %}
