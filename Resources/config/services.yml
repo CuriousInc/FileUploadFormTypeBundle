@@ -12,7 +12,7 @@ services:
         class: CuriousInc\FileUploadFormTypeBundle\Service\FileNamer
 
     curious_file_upload.twig.uploader_extension:
-        class: CuriousInc\FileUploadFormTypeBundle\Twig\Extension\UploaderExtension
+        class: CuriousInc\FileUploadFormTypeBundle\Twig\Extension\FileUploaderExtension
         arguments:
             - '@oneup_uploader.orphanage_manager'
             - '@session'
