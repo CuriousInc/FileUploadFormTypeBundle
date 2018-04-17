@@ -12,6 +12,7 @@ use CuriousInc\FileUploadFormTypeBundle\Entity\BaseFile;
 use Nelmio\ApiDocBundle\Annotation\ApiDoc;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use FOS\RestBundle\Controller\FOSRestController as FosRestController;
+use Oneup\UploaderBundle\Uploader\Storage\FilesystemOrphanageStorage;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -50,21 +51,15 @@ class FileController extends RestController
      */
     public function deleteFileAction(Request $request)
     {
-        $var = '';
-        $files = $this->get('oneup_uploader.orphanage.gallery')->getFiles();
-        $deleteName = $request->get('deleteName');
-        /** @var BaseFile $file */
-        foreach ($files as $file) {
-            $var .= "\n" . print_r($file, true) ;
-            if ($file->getFileName() === $deleteName) {
-                $fs = new Filesystem();
-                $fs->remove($file);
+        $fileId   = (int)$request->get('deleteId');
+        $fileName = (string)$request->get('deleteName');
 
-                return $this->createResponseCreated();
-            }
+        // Don't delete files without a name specified
+        if ('' === $fileName) {
+            return $this->createHttpForbiddenException();
         }
 
-        return $this->createHttpForbiddenException($var);
+        return $this->deleteTemporaryFile($fileName);
     }
 
     /**
@@ -98,7 +93,8 @@ class FileController extends RestController
      */
     public function getFileAction(Request $request, string $filename)
     {
-        $files = $this->get('oneup_uploader.orphanage.gallery')->getFiles();
+        $manager = $this->get('oneup_uploader.orphanage_manager')->get('gallery');
+        $files = $manager->getFiles();
 
         /** @var BaseFile $file */
         foreach ($files as $file) {
@@ -110,5 +106,31 @@ class FileController extends RestController
         }
 
         return $this->createHttpForbiddenException();
+    }
+
+    /**
+     * @param string $fileName
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    private function deleteTemporaryFile(string $fileName): Response
+    {
+        // Get current temporary files from orphanage manager
+        /** @var FilesystemOrphanageStorage $manager */
+        $manager = $this->get('oneup_uploader.orphanage_manager')->get('gallery');
+
+        $files = $manager->getFiles();
+        /** @var \SplFileInfo $file */
+        foreach ($files as $file) {
+            // Delete temporary file with given filename
+            if ($file->getFileName() === $fileName) {
+                $fs = new Filesystem();
+                $fs->remove($file);
+
+                return $this->createResponseDeletedOrNot();
+            }
+        }
+
+        return $this->createResponseDeletedOrNot();
     }
 }

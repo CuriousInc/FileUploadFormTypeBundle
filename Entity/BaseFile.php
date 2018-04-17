@@ -10,11 +10,9 @@ use Symfony\Component\Filesystem\Filesystem;
 /**
  * Class BaseFile
  *
- * @package CuriousInc\FileUploadFormTypeBundle\Entity
- *
  * @ORM\MappedSuperclass(repositoryClass="CuriousInc\FileUploadFormTypeBundle\Entity\Repository\BaseFileRepository")
  */
-class BaseFile
+class BaseFile implements FileInterface
 {
     use ORMBehavior\Timestampable\Timestampable;
 

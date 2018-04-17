@@ -18,17 +18,30 @@ class RestController extends FOSRestController
      *
      * @return Response
      */
-    protected function createHttpForbiddenException($var): Response
+    protected function createHttpForbiddenException($message = null): Response
     {
-        return new Response('Forbidden' . $var, 403);
+        if (null !== $message) {
+            return new Response('Forbidden - ' . $message, 403);
+        }
+
+        return new Response('Forbidden', 403);
     }
 
     /**
-     * Return response for succesful creation after POST-request
+     * Return response for successful creation of a file
+     *
      * @return Response
      */
     protected function createResponseCreated(): Response
     {
         return new Response('Created', 201);
+    }
+
+    /**
+     * Return response for successful deletion of a file
+     */
+    protected function createResponseDeletedOrNot()
+    {
+        return new Response(null, 204);
     }
 }

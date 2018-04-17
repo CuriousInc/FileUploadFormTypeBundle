@@ -8,7 +8,8 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Form\Type;
 
-use CuriousInc\FileUploadFormTypeBundle\Form\Transformer\FilesToEntitiesTransformer;
+use CuriousInc\FileUploadFormTypeBundle\Exception\NotImplementedException;
+use CuriousInc\FileUploadFormTypeBundle\Form\DataTransformer\SessionFilesToEntitiesTransformer;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Templating\Helper\UploaderHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
@@ -25,6 +26,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class DropzoneType extends AbstractType
 {
+    public const DEFAULT_MAX_FILES = 8;
+
     /** @var UploaderHelper */
     private $uploaderHelper;
 
@@ -56,11 +59,13 @@ class DropzoneType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $transformer = new FilesToEntitiesTransformer(
+        $mapping = $this->getMapping($options);
+
+        $transformer = new SessionFilesToEntitiesTransformer(
             $this->objectManager,
             $this->orphanageManager,
-            $builder->getName(),
-            $options['mappedBy']
+            $options,
+            $mapping
         );
 
         $builder->addModelTransformer($transformer);
@@ -85,19 +90,21 @@ class DropzoneType extends AbstractType
     {
         $resolver->setDefaults(
             [
-                'attr'          => [
+                'attr' => [
                     'action' => $this->uploaderHelper->endpoint('gallery'),
-                    'class'  => 'dropzone',
+                    'class' => 'dropzone',
                 ],
-                'maxFiles'      => 8,
-                'type'          => 'form_widget',
-                'btnClass'      => 'btn btn-info btn-lg',
-                'btnText'       => 'Files',
-                'uploaderText'  => 'Drop files here to upload',
-                'style_type'    => 'style_default',
+                'multiple' => 'autodetect',
+                'maxFiles' => static::DEFAULT_MAX_FILES,
+                'type' => 'form_widget',
+                'btnClass' => 'btn btn-info btn-lg',
+                'btnText' => 'Files',
+                'uploaderText' => 'Drop files here to upload',
+                'style_type' => 'style_default',
                 'acceptedFiles' => '.jpeg,.jpg,.png,.gif,.JPEG,.JPG,.PNG,.GIF',
-                'compound'      => 'true',
-                'mappedBy'      => 'default',
+                'compound' => 'true',
+                'mappedBy' => 'default',
+                'deletingAllowed' => true,
             ]
         );
     }
@@ -107,7 +114,9 @@ class DropzoneType extends AbstractType
      */
     public function buildView(FormView $view, FormInterface $form, array $options)
     {
-        // Todo: strip what we don't need
+        if (array_key_exists('multiple', $options)) {
+            $view->vars['multiple'] = $options['multiple'];
+        }
         if (array_key_exists('maxFiles', $options)) {
             $view->vars['maxFiles'] = $options['maxFiles'];
         }
@@ -135,6 +144,9 @@ class DropzoneType extends AbstractType
         if (array_key_exists('acceptedFiles', $options)) {
             $view->vars['acceptedFiles'] = $options['acceptedFiles'];
         }
+        if (array_key_exists('deletingAllowed', $options)) {
+            $view->vars['deletingAllowed'] = $options['deletingAllowed'];
+        }
     }
 
     /**
@@ -143,5 +155,28 @@ class DropzoneType extends AbstractType
     public function getName()
     {
         return 'dropzone';
+    }
+
+    /**
+     * Determine the mapping for this field, containing the owning entity, its property and the file entity.
+     *
+     * @param array $options the options provided to this field.
+     *
+     * @return array The mapping information about the mapping between the owning entity and the file entity.
+     */
+    private function getMapping(array $options): array
+    {
+        $mapping = [];
+
+        $fieldDescriptionClassName = 'Sonata\DoctrineORMAdminBundle\Admin\FieldDescription';
+        if (array_key_exists('sonata_field_description', $options)
+            && class_exists($fieldDescriptionClassName)
+            && $options['sonata_field_description'] instanceof $fieldDescriptionClassName) {
+            $mapping = $options['sonata_field_description']->getAssociationMapping();
+        } else {
+            throw new NotImplementedException('Cannot determine mapping without Sonata\\DoctrineORMAdminBundle.');
+        }
+
+        return $mapping;
     }
 }
