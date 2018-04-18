@@ -13,6 +13,7 @@ use CuriousInc\FileUploadFormTypeBundle\Form\DataTransformer\SessionFilesToEntit
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Templating\Helper\UploaderHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
@@ -20,13 +21,14 @@ use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
- * Class FileGalleryDropzone
- *
- * @package CMS3\CoreBundle\Form\Type
+ * Class FileGalleryDropzone.
  */
 class DropzoneType extends AbstractType
 {
     public const DEFAULT_MAX_FILES = 8;
+
+    /** @var ContainerInterface */
+    private $container;
 
     /** @var UploaderHelper */
     private $uploaderHelper;
@@ -37,18 +39,24 @@ class DropzoneType extends AbstractType
     /** @var ObjectManager */
     private $objectManager;
 
+    /** @var array */
+    private $mapping;
+
     /**
      * FileGalleryDropzone constructor.
      *
-     * @param UploaderHelper   $uploaderHelper
-     * @param OrphanageManager $orphanageManager
-     * @param ObjectManager    $objectManager
+     * @param ContainerInterface $container
+     * @param UploaderHelper     $uploaderHelper
+     * @param OrphanageManager   $orphanageManager
+     * @param ObjectManager      $objectManager
      */
     public function __construct(
+        ContainerInterface $container,
         UploaderHelper $uploaderHelper,
         OrphanageManager $orphanageManager,
         ObjectManager $objectManager
     ) {
+        $this->container        = $container;
         $this->uploaderHelper   = $uploaderHelper;
         $this->orphanageManager = $orphanageManager;
         $this->objectManager    = $objectManager;
@@ -59,13 +67,12 @@ class DropzoneType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $mapping = $this->getMapping($options);
-
         $transformer = new SessionFilesToEntitiesTransformer(
+            $this->container,
             $this->objectManager,
             $this->orphanageManager,
             $options,
-            $mapping
+            $this->getMapping($options)
         );
 
         $builder->addModelTransformer($transformer);
@@ -103,7 +110,6 @@ class DropzoneType extends AbstractType
                 'style_type' => 'style_default',
                 'acceptedFiles' => '.jpeg,.jpg,.png,.gif,.JPEG,.JPG,.PNG,.GIF',
                 'compound' => 'true',
-                'mappedBy' => 'default',
                 'deletingAllowed' => true,
             ]
         );
@@ -147,6 +153,8 @@ class DropzoneType extends AbstractType
         if (array_key_exists('deletingAllowed', $options)) {
             $view->vars['deletingAllowed'] = $options['deletingAllowed'];
         }
+
+        $view->vars['mapping'] = $this->getMapping($options);
     }
 
     /**
@@ -166,17 +174,19 @@ class DropzoneType extends AbstractType
      */
     private function getMapping(array $options): array
     {
-        $mapping = [];
+        if (null !== $this->mapping) {
+           return $this->mapping;
+        }
 
         $fieldDescriptionClassName = 'Sonata\DoctrineORMAdminBundle\Admin\FieldDescription';
         if (array_key_exists('sonata_field_description', $options)
             && class_exists($fieldDescriptionClassName)
             && $options['sonata_field_description'] instanceof $fieldDescriptionClassName) {
-            $mapping = $options['sonata_field_description']->getAssociationMapping();
+            $this->mapping = $options['sonata_field_description']->getAssociationMapping();
         } else {
             throw new NotImplementedException('Cannot determine mapping without Sonata\\DoctrineORMAdminBundle.');
         }
 
-        return $mapping;
+        return $this->mapping;
     }
 }

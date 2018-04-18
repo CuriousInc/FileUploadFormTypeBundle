@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Form\DataTransformerInterface;
@@ -20,6 +21,9 @@ use Symfony\Component\Form\Exception\TransformationFailedException;
  */
 class SessionFilesToEntitiesTransformer implements DataTransformerInterface
 {
+    /** @var ContainerInterface */
+    private $container;
+
     /**
      * @var ObjectManager
      */
@@ -66,11 +70,20 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
     private $options;
 
     /**
-     * @param ObjectManager    $om
-     * @param OrphanageManager $orphanageManager
+     * @param ContainerInterface                                        $container
+     * @param ObjectManager                                             $om
+     * @param OrphanageManager                                          $orphanageManager
+     * @param                                                           $options
+     * @param                                                           $mapping
      */
-    public function __construct(ObjectManager $om, OrphanageManager $orphanageManager, $options, $mapping)
-    {
+    public function __construct(
+        ContainerInterface $container,
+        ObjectManager $om,
+        OrphanageManager $orphanageManager,
+        $options,
+        $mapping
+    ) {
+        $this->container              = $container;
         $this->om                     = $om;
         $this->orphanageManager       = $orphanageManager;
         $this->sourceEntity           = $mapping['sourceEntity'];
@@ -117,7 +130,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
      * The reverseTransform method of the transformer is used to convert from the
      * normalized format (Filesystem File) to the model format (File domain object).
      *
-     * @param $existingFiles
+     * @param string[] $existingFiles Array of file ID => file web path
      *
      * @return array|mixed|null
      */
@@ -173,7 +186,9 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
                     : 'Expected a single file'
                 ) . ', got ' . $uploadedFileCount . '.'
             );
-        } elseif ($existingFileCount >= 1) {
+        }
+
+        if ($existingFileCount >= 1) {
             // Add files that already existed
             foreach ($existingFiles as $id => $path) {
                 $existingFile = $this->targetEntityRepository->find($id);
@@ -182,14 +197,14 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
                 }
                 $data[] = $existingFile;
             }
-        } elseif ($uploadedFileCount >= 1) {
+        }
+
+        if ($uploadedFileCount >= 1) {
             // Process files that were uploaded in this session
             foreach ($uploadedFiles as $uploadedFile) {
                 $data[] = $this->processFile($uploadedFile);
             }
             $this->clearFiles($uploadedFiles);
-        } else {
-            // No files were uploaded or already existed ($totalFileCount <= 0)
         }
 
         return $data;
@@ -218,7 +233,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
 
     private function hasOwningEntityCollection()
     {
-        $cardinalityDetector = new CardinalityDetector();
+        $cardinalityDetector = $this->container->get('curious_file_upload.cardinality_detector');
 
         return $cardinalityDetector->canHaveMultiple($this->sourceEntity, $this->fieldName);
     }

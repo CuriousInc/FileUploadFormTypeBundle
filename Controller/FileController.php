@@ -8,37 +8,33 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Controller;
 
-use CuriousInc\FileUploadFormTypeBundle\Entity\BaseFile;
-use Nelmio\ApiDocBundle\Annotation\ApiDoc;
+use CuriousInc\FileUploadFormTypeBundle\Exception\NotImplementedException;
 use FOS\RestBundle\Controller\Annotations as Rest;
-use FOS\RestBundle\Controller\FOSRestController as FosRestController;
+use Nelmio\ApiDocBundle\Annotation\ApiDoc;
 use Oneup\UploaderBundle\Uploader\Storage\FilesystemOrphanageStorage;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Class FileController
- *
- * @package CuriousInc\FileUploadFormTypeBundle\Controller
+ * Class FileController.
  */
 class FileController extends RestController
 {
     /**
-     * Delete a file by its identifier
+     * Delete a session file by its name
      *
      * @ApiDoc(
      *     description="Delete a file",
      *     section="Files",
      *     requirements={
-     *       {"name"="deleteName", "requirement"="[a-zA-Z\d]+"}
+     *       {"name"="name", "requirement"="[a-zA-Z\d]+"}
      *     },
      *     statusCodes={
-     *       201="Created",
+     *       204="No Content",
      *       400="Request is not properly formatted",
-     *       403="Permission denied",
+     *       403="Forbidden",
      *       500="An error occurred while handling your request"
      *     },
      * )
@@ -47,74 +43,17 @@ class FileController extends RestController
      *
      * @return Response|HttpException
      *
-     * @Rest\Post("/deleteFile")
+     * @Rest\Post("/deleteSessionFile")
      */
-    public function deleteFileAction(Request $request)
+    public function deleteSessionFileAction(Request $request)
     {
-        $fileId   = (int)$request->get('deleteId');
-        $fileName = (string)$request->get('deleteName');
+        $name = (string)$request->get('name');
 
         // Don't delete files without a name specified
-        if ('' === $fileName) {
+        if ('' === $name) {
             return $this->createHttpForbiddenException();
         }
 
-        return $this->deleteTemporaryFile($fileName);
-    }
-
-    /**
-     * Retrieve the files to be shown in the FileUpload FormType
-     *
-     * @ApiDoc(
-     *     description="Retrieve a file by its name",
-     *     section="Files",
-     *     requirements={
-     *       {"name"="filename", "requirement"="\[a-zA-Z\d]+"}
-     *     },
-     *     statusCodes={
-     *       200="OK",
-     *       400="Request is not properly formatted",
-     *       403="Permission denied",
-     *       500="An error occurred while handling your request"
-     *     },
-     *     output={
-     *       "class"="CMS3\CoreBundle\Entity\Container",
-     *       "groups"={"details"},
-     *       "parsers"={"Nelmio\ApiDocBundle\Parser\JmsMetadataParser"},
-     *     },
-     * )
-     *
-     * @param Request $request
-     * @param string  $filename
-     *
-     * @return Response|HttpException
-     * @Rest\Get("/uploadedFile/{filename}")
-     *
-     */
-    public function getFileAction(Request $request, string $filename)
-    {
-        $manager = $this->get('oneup_uploader.orphanage_manager')->get('gallery');
-        $files = $manager->getFiles();
-
-        /** @var BaseFile $file */
-        foreach ($files as $file) {
-            if ($file->getFileName() == $filename) {
-                $response = new BinaryFileResponse($file);
-
-                return $response;
-            }
-        }
-
-        return $this->createHttpForbiddenException();
-    }
-
-    /**
-     * @param string $fileName
-     *
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    private function deleteTemporaryFile(string $fileName): Response
-    {
         // Get current temporary files from orphanage manager
         /** @var FilesystemOrphanageStorage $manager */
         $manager = $this->get('oneup_uploader.orphanage_manager')->get('gallery');
@@ -123,7 +62,7 @@ class FileController extends RestController
         /** @var \SplFileInfo $file */
         foreach ($files as $file) {
             // Delete temporary file with given filename
-            if ($file->getFileName() === $fileName) {
+            if ($file->getFileName() === $name) {
                 $fs = new Filesystem();
                 $fs->remove($file);
 
@@ -132,5 +71,85 @@ class FileController extends RestController
         }
 
         return $this->createResponseDeletedOrNot();
+    }
+
+    /**
+     * Delete a persisted file by its identifier
+     *
+     * @ApiDoc(
+     *     description="Delete a file from given domain object",
+     *     section="Files",
+     *     requirements={
+     *       {"name"="id", "requirement"="[a-zA-Z\d]+"},
+     *       {"name"="sourceEntity", "requirement"="[a-zA-Z\\\d]+"},
+     *       {"name"="fieldName", "requirement"="[a-zA-Z\d]+"},
+     *       {"name"="targetEntity", "requirement"="[a-zA-Z\\\d]+"},
+     *     },
+     *     statusCodes={
+     *       204="No Content",
+     *       400="Request is not properly formatted",
+     *       403="Forbidden",
+     *       500="An error occurred while handling your request"
+     *     },
+     * )
+     *
+     * TODO - Make this method less verbose
+     *
+     * @param Request $request
+     *
+     * @return Response|HttpException
+     *
+     * @Rest\Post("/deletePersistedFile")
+     */
+    public function deletePersistedFileAction(Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $cardinalityDetector = $this->get('curious_file_upload.cardinality_detector');
+
+        $id = (int)$request->get('id');
+        $sourceEntityId = (string)$request->get('sourceEntityId');
+        $sourceEntityClassName = (string)$request->get('sourceEntity');
+        $targetEntityClassName = (string)$request->get('targetEntity');
+        $fieldName = (string)$request->get('fieldName');
+        $sourceEntityRepository = $em->getRepository($sourceEntityClassName);
+        $targetEntityRepository = $em->getRepository($targetEntityClassName);
+        $sourceEntity = $sourceEntityRepository->find($sourceEntityId);
+        $targetEntity = $targetEntityRepository->find($id);
+
+        // Remove the file(s) from owning entity
+        if ($cardinalityDetector->canHaveMultiple($sourceEntity, $fieldName)) {
+            try {
+                $removeMethod = $this->retrieveRemoveMethod($sourceEntity, $fieldName);
+            } catch (NotImplementedException $e) {
+                return $this->createHttpForbiddenException();
+            }
+            $sourceEntity->$removeMethod($targetEntity);
+        } else {
+            $setMethod = 'set' . ucfirst($fieldName);
+            $sourceEntity->$setMethod(null);
+        }
+
+        // Persist owning entity
+        $em->persist($sourceEntity);
+        $em->flush();
+
+        return $this->createResponseDeletedOrNot();
+    }
+
+    private function retrieveRemoveMethod($entity, string $fieldName): string
+    {
+        $cardinalityDetector = $this->get('curious_file_upload.cardinality_detector');
+
+        $method = 'remove' . $cardinalityDetector->prepareString($fieldName);
+        if (method_exists($entity, $method)) {
+            return $method;
+        }
+
+        $method = 'remove' . ucfirst($fieldName);
+        if (method_exists($entity, $method)) {
+            return $method;
+        }
+
+        throw new NotImplementedException("Invalid domain object");
     }
 }

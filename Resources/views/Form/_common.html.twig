@@ -7,6 +7,10 @@
   {% set multiple = curiousFileUploadAutodetectMultiple(form.parent.vars.value, form.vars.name) %}
 {% endif %}
 
+{% if multiple == false %}
+  {% set maxFiles = 1 %}
+{% endif %}
+
 {% if maxFiles is defined %}
   {%- set object = attribute(form.parent.vars.value, form.vars.name) -%}
   {%- set simple = (object.getPath is defined) -%}
@@ -73,31 +77,47 @@
                 }
               });
               {% endif %}
+
               this.on("sending", function(file, request, formData) {
                 uniqueId = '{{ form.vars.name }}' + '_' + Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1) + '.' + file.name.split('.').pop();
-                if (typeof file.previousAdded === 'undefined' && !file.previousAdded) {
+                if (typeof file.previousAdded === 'undefined' || !file.previousAdded) {
                   file.name = uniqueId;
                   file.removeName = uniqueId;
                 }
                 formData.append('uniqueFileName', uniqueId);
               });
 
-              {# Call delete on File-API, to delete temporary or persisted file #}
               this.on("removedfile", function(file) {
-                {# Restore the preview element if deleting of a persistent file is not allowed #}
+                {# Call delete on File-API, to delete temporary or persisted file, where allowed #}
                 var deletingAllowed = {{ deletingAllowed ? 'true' : 'false' }};
-                if (!deletingAllowed && file.id) {
-                  $this.element.classList.add("dz-started");
-                  $this.files.unshift(file);
-                  $this.previewsContainer.appendChild(file.previewElement);
-                  alert('File could not be removed, because it isn\'t allowed.');
+                if (!file.id) {
+                  {# Always delete temporary files, a mistake in uploading is assumed #}
+                  $.post('{{ path('curious_file_upload_delete_temporary') }}', { name: file.removeName });
+                } else {
+                  {# File is persisted #}
+                  if (deletingAllowed) {
+                    {# Delete the persisted file if allowed #}
+                    $.post('{{ path('curious_file_upload_delete_persisted') }}', {
+                      id: file.id,
+                      sourceEntity: '{{ mapping.sourceEntity|escape('js') }}',
+                      sourceEntityId: '{{ form.parent.vars.data.id|escape('js') }}',
+                      fieldName: '{{ mapping.fieldName|escape('js') }}',
+                      targetEntity: '{{ mapping.targetEntity|escape('js') }}'
+                    });
+                  } else {
+                    {# Restore the preview element, since deleting persisted files is not allowed #}
+                    $this.element.classList.add("dz-started");
+                    $this.files.unshift(file);
+                    $this.previewsContainer.appendChild(file.previewElement);
+                    alert('File could not be removed, because it isn\'t allowed.');
+                  }
                 }
-
-                $.post('{{ path('curious_file_upload_delete') }}', { deleteName: file.removeName, deleteId: file.id });
               });
 
-              {# Añadimos los ficheros #}
+
               {% if object is defined and object is not null and not simple %}
+              {# Object contains multiple files #}
+
               {% for file in object %}
               {{ curious_file_upload_load_on_cache(file) }}
               var mockFile = {
@@ -105,14 +125,25 @@
                 size: 12345,
                 type: 'image/jpeg',
                 id: '{{ file.id }}',
+                previousAdded: true
               };
-              this.addFile.call(this, mockFile);
+
+              {# Call the Dropzone addedfile event handler #}
+              this.options.addedfile.call(this, mockFile);
+
+              {# Register file #}
+              this.files.push(mockFile);
+
+              {# Load thumbnails #}
               this.options.thumbnail.call(this, mockFile, "{{ asset(file.path) }}");
-              {# Guardamos sus nombres para la peticion de borrado #}
-              this.files[this.files.length - 1].removeName = "{{ file.name }}";
-              this.files[this.files.length - 1].previousAdded = true;
+
+              {# Mark the upload as complete to remove progress bar #}
+              this.options.complete.call(this, mockFile);
+
               {% endfor %}
+
               {% elseif object is defined and object is not null and simple %}
+              {# Object equals single file #}
               {% set file = object %}
               {{ curious_file_upload_load_on_cache(file) }}
               var mockFile = {
@@ -120,12 +151,20 @@
                 size: 12345,
                 type: 'image/jpeg',
                 id: '{{ file.id }}',
+                previousAdded: true
               };
-              this.addFile.call(this, mockFile);
+
+              {# Call the Dropzone addedfile event handler #}
+              this.options.addedfile.call(this, mockFile);
+
+              {# Register file #}
+              this.files.push(mockFile);
+
+              {# Load thumbnails #}
               this.options.thumbnail.call(this, mockFile, "{{ asset(file.path) }}");
-              {# Guardamos sus nombres para la peticion de borrado #}
-              this.files[this.files.length - 1].removeName = "{{ file.name }}";
-              this.files[this.files.length - 1].previousAdded = true;
+
+              {# Mark the upload as complete to remove progress bar #}
+              this.options.complete.call(this, mockFile);
               {% endif %}
               {% if form.vars.type=='crop' %}
               var dataURItoBlob = function(dataURI) {
@@ -230,6 +269,6 @@
             },
           }
         );
-      })
+      });
   </script>
 {% endif %}
