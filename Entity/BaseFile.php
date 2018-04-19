@@ -100,6 +100,17 @@ class BaseFile implements FileInterface
     public function deleteFile(LifecycleEventArgs $event)
     {
         $fs = new Filesystem();
-        //$fs->remove($this->getAbsolutePath());
+
+        $fs->remove($this->getPath());
+    }
+
+    /**
+     * Get size of the file that is represented by this entity
+     *
+     * @return int|false The size of the file in bytes, or false if the file doesn't exist
+     */
+    public function getSize()
+    {
+        return filesize($this->getPath()) ?? 0;
     }
 }

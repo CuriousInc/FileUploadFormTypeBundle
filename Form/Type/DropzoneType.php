@@ -26,6 +26,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 class DropzoneType extends AbstractType
 {
     public const DEFAULT_MAX_FILES = 8;
+    public const DEFAULT_MAX_SIZE  = 8;
 
     /** @var ContainerInterface */
     private $container;
@@ -103,6 +104,7 @@ class DropzoneType extends AbstractType
                 ],
                 'multiple' => 'autodetect',
                 'maxFiles' => static::DEFAULT_MAX_FILES,
+                'maxFileSize' => static::DEFAULT_MAX_SIZE,
                 'type' => 'form_widget',
                 'btnClass' => 'btn btn-info btn-lg',
                 'btnText' => 'Files',
@@ -125,6 +127,9 @@ class DropzoneType extends AbstractType
         }
         if (array_key_exists('maxFiles', $options)) {
             $view->vars['maxFiles'] = $options['maxFiles'];
+        }
+        if (array_key_exists('maxFileSize', $options)) {
+            $view->vars['maxFileSize'] = $options['maxFileSize'];
         }
         if (array_key_exists('type', $options)) {
             $view->vars['type'] = $options['type'];

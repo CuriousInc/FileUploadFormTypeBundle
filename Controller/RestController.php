@@ -7,9 +7,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Class RestController
- *
- * @package CuriousInc\FileUploadFormTypeBundle\Controller
+ * Class RestController.
  */
 class RestController extends FOSRestController
 {
