@@ -2,11 +2,9 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Form\DataTransformer;
 
-use CuriousInc\FileUploadFormTypeBundle\Detector\CardinalityDetector;
 use CuriousInc\FileUploadFormTypeBundle\Entity\BaseFile;
 use CuriousInc\FileUploadFormTypeBundle\Exception\FileTransformationException;
 use CuriousInc\FileUploadFormTypeBundle\Form\Type\DropzoneType;
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;

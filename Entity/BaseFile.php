@@ -29,13 +29,15 @@ class BaseFile implements FileInterface
     protected $path;
 
     /**
-     * Get id
+     * @ORM\PostRemove
      *
-     * @return integer
+     * @param \Doctrine\Common\Persistence\Event\LifecycleEventArgs $event
      */
-    public function getId()
+    public function deleteFile(LifecycleEventArgs $event)
     {
-        return $this->id;
+        $fs = new Filesystem();
+
+        $fs->remove($this->getPath());
     }
 
     public function getAbsolutePath()
@@ -45,26 +47,27 @@ class BaseFile implements FileInterface
 
     protected function getUploadRootDir()
     {
-        // the absolute directory path where uploaded
-        // documents should be saved
         return __DIR__ . '/../../../web' . $this->getUploadDir();
     }
 
     protected function getUploadDir()
     {
-        // get rid of the __DIR__ so it doesn't screw up
-        // when displaying uploaded doc/image in the view.
         return '';
-    }
-
-    public function getWebPath()
-    {
-        return null === $this->path ? null : $this->getUploadDir() . '/' . $this->path;
     }
 
     public function getFrontPath()
     {
         return null === $this->path ? null : $this->getUploadDir() . '/' . $this->path;
+    }
+
+    /**
+     * Get id
+     *
+     * @return integer
+     */
+    public function getId()
+    {
+        return $this->id;
     }
 
     public function getName()
@@ -93,18 +96,6 @@ class BaseFile implements FileInterface
     }
 
     /**
-     * @ORM\PostRemove
-     *
-     * @param \Doctrine\Common\Persistence\Event\LifecycleEventArgs $event
-     */
-    public function deleteFile(LifecycleEventArgs $event)
-    {
-        $fs = new Filesystem();
-
-        $fs->remove($this->getPath());
-    }
-
-    /**
      * Get size of the file that is represented by this entity
      *
      * @return int|false The size of the file in bytes, or false if the file doesn't exist
@@ -112,5 +103,10 @@ class BaseFile implements FileInterface
     public function getSize()
     {
         return filesize($this->getPath()) ?? 0;
+    }
+
+    public function getWebPath()
+    {
+        return null === $this->path ? null : $this->getUploadDir() . '/' . $this->path;
     }
 }

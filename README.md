@@ -22,7 +22,7 @@ $ composer require curious-inc/file-upload-form-type-bundle
 #### Registering the bundle in AppKernel
 Register both OneUp/Uploader bundle and this bundle in AppKernel
 ```php
-//app/AppKernel.php
+// app/AppKernel.php
 
 $bundles = [
 
@@ -40,7 +40,7 @@ $bundles = [
 ##### Routing configuration
 Edit your applications routing configuration
 ```yaml
-//app/config/routing.yml;
+# /app/config/routing.yml
 
 ...
 
@@ -56,7 +56,7 @@ Edit your applications configuration file to reflect the following changes
 
 Form configuration
 ```yaml
-//app/config/config.yml
+# /app/config/config.yml
 
 ...
 
@@ -71,7 +71,7 @@ twig:
 
 Form configuration for SonataAdmin (if applicable)
 ```yaml
-//app/config/config.yml
+# /app/config/config.yml
 
 ...
 
@@ -85,6 +85,26 @@ sonata_doctrine_orm_admin:
             show:
                 dropzone:  '@CuriousIncFileUploadFormTypeBundle:Admin:file.html.twig'
                 ...
+
+...
+
+```
+
+OneUp/UploaderBundle configuration
+```yaml
+# app/config/config.yml
+
+...
+
+# Configuration for oneup/uploader-bundle
+oneup_uploader:
+    mappings:
+        gallery:
+            frontend: 'dropzone'
+            use_orphanage: true
+            namer: curious_file_upload.file_namer # needed 
+            storage:
+                directory: '%kernel.project_dir%/web/uploads/gallery'
 
 ...
 

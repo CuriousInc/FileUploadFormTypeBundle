@@ -28,9 +28,10 @@
           .attr("type", "hidden")
           .attr("name", "entity_id").val("{{ form.parent.vars.value.id }}");
         form.append($(input));
+
+        {# Dropzone field #}
         {{ form.vars.id }} = $('#{{ form.vars.id }}').dropzone(
           {
-            {# Opciones de configuración #}
             acceptedFiles: "{{ acceptedFiles|default('.jpeg,.jpg,.png,.gif,.JPEG,.JPG,.PNG,.GIF') }}",//"audio/*,image/*,.psd,.pdf"
             maxFiles: "{{ maxFiles }}",
             maxFilesize: "{{ maxFileSize }}",
@@ -43,7 +44,7 @@
               {% if multiple == false %}
               this.on("addedfile", function(file) {
 
-                {# set removeName for last added file #}
+                {# Set removeName for last added file #}
                 if (typeof uniqueId !== 'undefined') {
                   this.files[this.files.length - 1].removeName = uniqueId;
                 } else {
@@ -53,14 +54,14 @@
                 {# Make sure to only have one file #}
                 if (this.files[1] != null) {
                   if (undefined === this.files[0].id) {
-                    {# first file is not persisted, delete it to make room #}
+                    {# First file is not persisted, delete it to make room #}
                     this.removeFile(this.files[0]);
                   } else {
                     {% if deletingAllowed %}
-                      {# first file is persisted, but it will be deleted #}
+                      {# First file is persisted, but it will be deleted #}
                       this.removeFile(this.files[0]);
                     {% else %}
-                      {# first file is persisted, delete the last uploaded file instead #}
+                      {# First file is persisted, delete the last uploaded file instead #}
                       this.removeFile(this.files[this.files.length - 1]);
                       alert('Can not upload a new file, changing already saved files is not allowed.');
                     {% endif %}
@@ -234,9 +235,9 @@
                   var $this = $(this);
                   $this
                     .on('click', '.crop-upload', function() {
-                      // get cropped image data
+                      {# Get cropped image data #}
                       var blob = cropper.getCroppedCanvas().toDataURL();
-                      // transform it to Blob object
+                      {# Transform it to Blob object #}
                       var croppedFile = dataURItoBlob(blob);
                       croppedFile.name = fileName;
                       var dropzone = Dropzone.forElement({{ form.vars.id }}[0]);
