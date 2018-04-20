@@ -22,7 +22,7 @@ class FileNamer implements NamerInterface
     {
         $uniqueFileName = $_REQUEST['uniqueFileName'];
 
-        if (1 === preg_match('A–Za–z0–9\.\_\-', $uniqueFileName)) {
+        if (1 === preg_match('/[A–Za–z0–9\._\-]+/u', $uniqueFileName)) {
             return $uniqueFileName;
         }
 

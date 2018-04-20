@@ -93,8 +93,6 @@ class FileController extends RestController
      *     },
      * )
      *
-     * TODO - Make this method less verbose
-     *
      * @param Request $request
      *
      * @return Response|HttpException
