@@ -12,8 +12,6 @@ use Symfony\Component\Validator\Constraints\Date;
 class FileNamer implements NamerInterface
 {
     /**
-     * TODO - Check for security
-     *
      * @param FileInterface $file
      *
      * @return string
