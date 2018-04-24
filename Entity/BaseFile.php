@@ -72,7 +72,9 @@ class BaseFile implements FileInterface
 
     public function getName()
     {
-        return explode('/', $this->getPath())[2];
+        $fullPath = explode('/', $this->getPath());
+
+        return $fullPath[\count($fullPath) - 1];
     }
 
     /**

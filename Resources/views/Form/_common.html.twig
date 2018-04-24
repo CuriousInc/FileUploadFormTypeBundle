@@ -1,4 +1,4 @@
-{{ curious_file_upload_cache_clear(form.vars.name) }}
+{{ curiousFileUploadClearCache() }}
 
 {%- trans_default_domain form.vars.translation_domain|default('messages') -%}
 
@@ -14,8 +14,11 @@
 {% if maxFiles is defined %}
   {%- set object = attribute(form.parent.vars.value, form.vars.name) -%}
   {%- set simple = (object.getPath is defined) -%}
+  <script>
+    function generateUniqueFileName() {
+      return Date.now().toString() + Math.floor(1000 + Math.random() * 0x10000).toString().substr(0, 4);
+    }
 
-  <script type="application/javascript">
     {% if form.vars.type == 'crop' %}
     jQuery.getScript("{{ asset('bundles/curiousincfileuploadformtype/js/cropper.min.js') }}").done(
     {% else %}
@@ -82,7 +85,11 @@
               {% endif %}
 
               this.on("sending", function(file, request, formData) {
-                uniqueId = '{{ form.vars.name }}' + '_' + Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1) + '.' + file.name.split('.').pop();
+                uniqueId = '{{ curiousFileUploadTypeOf(form.parent.vars.data) }}'
+                            + '_{{ form.vars.name }}'
+                            + '_' + generateUniqueFileName()
+                            + '.' + file.name.split('.').pop();
+
                 if (typeof file.previousAdded === 'undefined' || !file.previousAdded) {
                   file.name = uniqueId;
                   file.removeName = uniqueId;
@@ -125,7 +132,6 @@
               {# Object contains multiple files #}
 
               {% for file in object %}
-              {{ curious_file_upload_load_on_cache(file) }}
               var mockFile = {
                 name: "{{ file.name }}",
                 size: {{ file.size }},
@@ -152,7 +158,6 @@
               {% elseif object is defined and object is not null and simple %}
               {# Object equals single file #}
               {% set file = object %}
-              {{ curious_file_upload_load_on_cache(file) }}
               var mockFile = {
                 name: "{{ file.name }}",
                 size: 12345,

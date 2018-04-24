@@ -8,12 +8,13 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Form\Type;
 
+use CuriousInc\FileUploadFormTypeBundle\Detector\CardinalityDetectorInterface;
 use CuriousInc\FileUploadFormTypeBundle\Exception\NotImplementedException;
 use CuriousInc\FileUploadFormTypeBundle\Form\DataTransformer\SessionFilesToEntitiesTransformer;
+use CuriousInc\FileUploadFormTypeBundle\Service\Cache;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Templating\Helper\UploaderHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
@@ -28,8 +29,11 @@ class DropzoneType extends AbstractType
     public const DEFAULT_MAX_FILES = 8;
     public const DEFAULT_MAX_SIZE  = 8;
 
-    /** @var ContainerInterface */
-    private $container;
+    /** @var Cache */
+    private $cache;
+
+    /** @var CardinalityDetectorInterface */
+    private $cardinalityDetector;
 
     /** @var UploaderHelper */
     private $uploaderHelper;
@@ -46,21 +50,24 @@ class DropzoneType extends AbstractType
     /**
      * FileGalleryDropzone constructor.
      *
-     * @param ContainerInterface $container
-     * @param UploaderHelper     $uploaderHelper
-     * @param OrphanageManager   $orphanageManager
-     * @param ObjectManager      $objectManager
+     * @param UploaderHelper               $uploaderHelper
+     * @param OrphanageManager             $orphanageManager
+     * @param ObjectManager                $objectManager
+     * @param CardinalityDetectorInterface $cardinalityDetector
+     * @param Cache                        $cache
      */
     public function __construct(
-        ContainerInterface $container,
         UploaderHelper $uploaderHelper,
         OrphanageManager $orphanageManager,
-        ObjectManager $objectManager
+        ObjectManager $objectManager,
+        CardinalityDetectorInterface $cardinalityDetector,
+        Cache $cache
     ) {
-        $this->container        = $container;
-        $this->uploaderHelper   = $uploaderHelper;
-        $this->orphanageManager = $orphanageManager;
-        $this->objectManager    = $objectManager;
+        $this->uploaderHelper      = $uploaderHelper;
+        $this->orphanageManager    = $orphanageManager;
+        $this->objectManager       = $objectManager;
+        $this->cardinalityDetector = $cardinalityDetector;
+        $this->cache               = $cache;
     }
 
     /**
@@ -69,9 +76,10 @@ class DropzoneType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $transformer = new SessionFilesToEntitiesTransformer(
-            $this->container,
             $this->objectManager,
             $this->orphanageManager,
+            $this->cardinalityDetector,
+            $this->cache,
             $options,
             $this->getMapping($options)
         );
@@ -180,7 +188,7 @@ class DropzoneType extends AbstractType
     private function getMapping(array $options): array
     {
         if (null !== $this->mapping) {
-           return $this->mapping;
+            return $this->mapping;
         }
 
         $fieldDescriptionClassName = 'Sonata\DoctrineORMAdminBundle\Admin\FieldDescription';

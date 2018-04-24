@@ -2,14 +2,14 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Form\DataTransformer;
 
+use CuriousInc\FileUploadFormTypeBundle\Detector\CardinalityDetectorInterface;
 use CuriousInc\FileUploadFormTypeBundle\Entity\BaseFile;
 use CuriousInc\FileUploadFormTypeBundle\Exception\FileTransformationException;
 use CuriousInc\FileUploadFormTypeBundle\Form\Type\DropzoneType;
+use CuriousInc\FileUploadFormTypeBundle\Service\Cache;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
@@ -19,8 +19,20 @@ use Symfony\Component\Form\Exception\TransformationFailedException;
  */
 class SessionFilesToEntitiesTransformer implements DataTransformerInterface
 {
-    /** @var ContainerInterface */
-    private $container;
+    /**
+     * @var Cache
+     */
+    private $cache;
+
+    /**
+     * @var CardinalityDetectorInterface
+     */
+    private $cardinalityDetector;
+
+    /**
+     * string the property in the owning entity referencing the file(s)
+     */
+    private $fieldName;
 
     /**
      * @var ObjectManager
@@ -28,9 +40,19 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
     private $om;
 
     /**
+     * @var array
+     */
+    private $options;
+
+    /**
      * @var OrphanageManager
      */
     private $orphanageManager;
+
+    /**
+     * @var \Doctrine\ORM\Mapping\Entity
+     */
+    private $owningEntityObject;
 
     /**
      * @var string the fully qualified className for the entity owning the file(s)
@@ -43,16 +65,6 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
     private $sourceEntityRepository;
 
     /**
-     * @var \Doctrine\ORM\Mapping\Entity
-     */
-    private $owningEntityObject;
-
-    /**
-     * string the property in the owning entity referencing the file(s)
-     */
-    private $fieldName;
-
-    /**
      * @var string the fully qualified className for the image entity
      */
     private $targetEntity;
@@ -62,34 +74,25 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
      */
     private $targetEntityRepository;
 
-    /**
-     * @var array
-     */
-    private $options;
-
-    /**
-     * @param ContainerInterface                                        $container
-     * @param ObjectManager                                             $om
-     * @param OrphanageManager                                          $orphanageManager
-     * @param                                                           $options
-     * @param                                                           $mapping
-     */
     public function __construct(
-        ContainerInterface $container,
         ObjectManager $om,
         OrphanageManager $orphanageManager,
+        CardinalityDetectorInterface $cardinalityDetector,
+        Cache $cache,
         $options,
         $mapping
     ) {
-        $this->container              = $container;
         $this->om                     = $om;
         $this->orphanageManager       = $orphanageManager;
+        $this->cardinalityDetector    = $cardinalityDetector;
+        $this->cache                  = $cache;
         $this->sourceEntity           = $mapping['sourceEntity'];
         $this->sourceEntityRepository = $this->om->getRepository($this->sourceEntity);
         $this->fieldName              = $mapping['fieldName'];
         $this->targetEntity           = $mapping['targetEntity'];
         $this->targetEntityRepository = $this->om->getRepository($this->targetEntity);
         $this->options                = $options;
+        $this->mapping                = $mapping;
     }
 
     /**
@@ -152,7 +155,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
             $exception = new TransformationFailedException($ex->getMessage(), $ex->getCode());
         } finally {
             // Clear the files in gallery
-            $this->clearFiles($uploadedFiles);
+            $this->cache->clear();
         }
 
         // Throw exception if any was given
@@ -171,16 +174,16 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
 
     private function reverseTransformUploadedAndExistingFiles(Finder $uploadedFiles, array $existingFiles)
     {
-        $data = [];
+        $data              = [];
         $uploadedFileCount = \count($uploadedFiles);
         $existingFileCount = \count($existingFiles);
-        $totalFileCount = $uploadedFileCount + $existingFileCount;
+        $totalFileCount    = $uploadedFileCount + $existingFileCount;
 
         if ($totalFileCount > $this->getMaxFiles()) {
             // Single files only
             throw new TransformationFailedException(
                 ($this->isMultipleAllowed()
-                    ? 'Expected ' . $this->getMaxFiles() . 'files'
+                    ? 'Expected ' . $this->getMaxFiles() . ' files'
                     : 'Expected a single file'
                 ) . ', got ' . $uploadedFileCount . '.'
             );
@@ -202,7 +205,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
             foreach ($uploadedFiles as $uploadedFile) {
                 $data[] = $this->processFile($uploadedFile);
             }
-            $this->clearFiles($uploadedFiles);
+            $this->cache->clear();
         }
 
         return $data;
@@ -231,9 +234,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
 
     private function hasOwningEntityCollection()
     {
-        $cardinalityDetector = $this->container->get('curious_file_upload.cardinality_detector');
-
-        return $cardinalityDetector->canHaveMultiple($this->sourceEntity, $this->fieldName);
+        return $this->cardinalityDetector->canHaveMultiple($this->sourceEntity, $this->fieldName);
     }
 
     private function processFile(\SplFileInfo $uploadedFile)
@@ -241,36 +242,29 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         // Move files to gallery location and return the corresponding domain objects
         $data = null;
 
-        // TODO - Add uploadpath to options and link it to one-up uploaderbundle endpoints
-        $alreadyExists = null !== $this->targetEntityRepository->findOneBy([
-                'path' => 'uploads/gallery/' . $uploadedFile->getFilename(),
-            ]);
+        $sourceEntityFqdn = explode('\\', $this->mapping['sourceEntity']);
+        $path             = sprintf(
+            'uploads/gallery/%s/%s/%s',
+            end($sourceEntityFqdn),
+            $this->mapping['fieldName'],
+            $uploadedFile->getFilename()
+        );
 
+        $alreadyExists = null !== $this->targetEntityRepository->findOneBy(['path' => $path]);
         if ($alreadyExists) {
-            // TODO - When the frontend already does check (within this bundle), we should actually just skip the file.
             throw new TransformationFailedException('Uploads should be checked for existence in the frontend');
         }
 
         /** @var BaseFile $fileEntity */
         $fileEntity = new $this->targetEntity();
-        $fileEntity->setPath('uploads/gallery/' . $uploadedFile->getFileName());
+        $fileEntity->setPath($path);
         $this->om->persist($fileEntity);
         $this->om->flush();
         $data = $fileEntity;
 
-        // TODO - Remove this duplicate variable $manager in multiple methods
         $manager = $this->orphanageManager->get('gallery');
         $manager->uploadFiles([$uploadedFile]);
 
         return $data;
-    }
-
-    private function clearFiles(Finder $files)
-    {
-        $fileSystem = new Filesystem();
-        /** @var \SplFileInfo $file */
-        foreach ($files as $file) {
-            $fileSystem->remove($file);
-        }
     }
 }

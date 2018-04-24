@@ -42,37 +42,17 @@ class UploaderExtension extends \Twig_Extension
     public function getFunctions()
     {
         return [
-            new \Twig_SimpleFunction('curious_file_upload_cache_clear', [$this, 'clear']),
-            new \Twig_SimpleFunction('curious_file_upload_load_on_cache', [$this, 'load']),
+            new \Twig_SimpleFunction('curiousFileUploadClearCache', [$this, 'clearCache']),
             new \Twig_SimpleFunction('curiousFileUploadAutodetectMultiple', [$this, 'autodetectMultiple']),
+            new \Twig_SimpleFunction('curiousFileUploadTypeOf', [$this, 'typeOf']),
         ];
     }
 
-    public function clear($fieldName)
+    public function clearCache()
     {
-        $fs     = new Filesystem();
-        $finder = new Finder();
-        if ($fs->exists($this->config['directory'] . '/' . $this->session->getId())) {
-            $files = $finder->ignoreUnreadableDirs()->in($this->config['directory'] . '/' . $this->session->getId());
-            foreach ($files->files() as $image) {
-                if (explode('_', $image->getFilename())[0] == $fieldName) {
-                    $fs->remove($image);
-                }
-            }
-        }
-    }
+        $cache = $this->container->get('curious_file_upload.service.cache');
 
-    public function load(BaseFile $file)
-    {
-        $fs = new Filesystem();
-        // Check file exists
-        if (!file_exists($file->getAbsolutePath())) {
-            return false;
-        }
-        $fs->copy(
-            $file->getAbsolutePath(),
-            $this->config['directory'] . '/' . $this->session->getId() . '/gallery/' . $file->getName()
-        );
+        $cache->clear();
     }
 
     /**
@@ -88,5 +68,17 @@ class UploaderExtension extends \Twig_Extension
         $detector = $this->container->get('curious_file_upload.cardinality_detector');
 
         return $detector->canHaveMultiple($entity, $property);
+    }
+
+    /**
+     * Get the name of entity class.
+     *
+     * @param $entity
+     *
+     * @return string
+     */
+    public function typeOf($entity): string
+    {
+        return (new \ReflectionClass($entity))->getShortName();
     }
 }

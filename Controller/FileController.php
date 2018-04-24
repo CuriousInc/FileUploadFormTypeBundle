@@ -57,12 +57,12 @@ class FileController extends RestController
         // Get current temporary files from orphanage manager
         /** @var FilesystemOrphanageStorage $manager */
         $manager = $this->get('oneup_uploader.orphanage_manager')->get('gallery');
-
         $files = $manager->getFiles();
-        /** @var \SplFileInfo $file */
+        $namer = $this->get('curious_file_upload.file_namer');
+        /** @var \Symfony\Component\Finder\SplFileInfo $file */
         foreach ($files as $file) {
             // Delete temporary file with given filename
-            if ($file->getFileName() === $name) {
+            if ($file->getRelativePathname() === $namer->convertUnderscorePath($name)) {
                 $fs = new Filesystem();
                 $fs->remove($file);
 

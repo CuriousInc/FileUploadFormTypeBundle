@@ -2,10 +2,11 @@ services:
   curious_file_upload.dropzone_type:
     class: CuriousInc\FileUploadFormTypeBundle\Form\Type\DropzoneType
     arguments:
-      - '@service_container'
       - '@oneup_uploader.templating.uploader_helper'
       - '@oneup_uploader.orphanage_manager'
       - '@doctrine.orm.entity_manager'
+      - '@curious_file_upload.cardinality_detector'
+      - '@curious_file_upload.service.cache'
     tags:
         - { name: form.type, alias: dropzone }
 
@@ -25,3 +26,7 @@ services:
   curious_file_upload.cardinality_detector:
     class: CuriousInc\FileUploadFormTypeBundle\Detector\CardinalityDetector
 
+  curious_file_upload.service.cache:
+    class: CuriousInc\FileUploadFormTypeBundle\Service\Cache
+    arguments:
+      - '@oneup_uploader.orphanage_manager'

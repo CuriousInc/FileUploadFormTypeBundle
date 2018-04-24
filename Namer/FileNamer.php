@@ -2,9 +2,9 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Namer;
 
+use CuriousInc\FileUploadFormTypeBundle\Exception\InvalidFileNameException;
 use Oneup\UploaderBundle\Uploader\File\FileInterface;
 use Oneup\UploaderBundle\Uploader\Naming\NamerInterface;
-use Symfony\Component\Validator\Constraints\Date;
 
 /**
  * Class FileNamer.
@@ -12,6 +12,8 @@ use Symfony\Component\Validator\Constraints\Date;
 class FileNamer implements NamerInterface
 {
     /**
+     * Determine and sanitise file path from request
+     *
      * @param FileInterface $file
      *
      * @return string
@@ -20,10 +22,34 @@ class FileNamer implements NamerInterface
     {
         $uniqueFileName = $_REQUEST['uniqueFileName'];
 
-        if (1 === preg_match('/[A–Za–z0–9\._\-]+/u', $uniqueFileName)) {
-            return $uniqueFileName;
+        return $this->convertUnderscorePath($uniqueFileName);
+    }
+
+    /**
+     * Converts a file name containing underscores to a path.
+     *
+     * @param $underscorePath
+     *
+     * @return string
+     */
+    public function convertUnderscorePath($underscorePath): string
+    {
+        $fileName          = '';
+        $path              = explode('_', $underscorePath);
+        foreach ($path as $key => $part) {
+            $isLast = $key === \count($path) - 1;
+            if ($isLast && 1 === preg_match('/[a-zA-Z0-9\.\-]+/u', $part)) {
+                // FileName
+                $fileName .= $part;
+            } elseif (!$isLast && 1 === preg_match('/[a-zA-Z0-9\-]+/u', $part)) {
+                // Folder
+                $fileName .= $part . '/';
+            } else {
+                // Invalid input
+                throw new InvalidFileNameException();
+            }
         }
 
-        return md5($uniqueFileName);
+        return $fileName;
     }
 }
