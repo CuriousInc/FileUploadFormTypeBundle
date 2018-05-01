@@ -5,8 +5,9 @@ services:
       - '@oneup_uploader.templating.uploader_helper'
       - '@oneup_uploader.orphanage_manager'
       - '@doctrine.orm.entity_manager'
-      - '@curious_file_upload.cardinality_detector'
-      - '@curious_file_upload.service.cache'
+      - '@curious_file_upload.service.class_helper'
+      - '@curious_file_upload.service.cache_helper'
+      - '@curious_file_upload.file_namer'
     tags:
         - { name: form.type, alias: dropzone }
 
@@ -23,10 +24,26 @@ services:
   curious_file_upload.file_namer:
     class: CuriousInc\FileUploadFormTypeBundle\Namer\FileNamer
 
-  curious_file_upload.cardinality_detector:
-    class: CuriousInc\FileUploadFormTypeBundle\Detector\CardinalityDetector
-
-  curious_file_upload.service.cache:
-    class: CuriousInc\FileUploadFormTypeBundle\Service\Cache
+  curious_file_upload.service.cache_helper:
+    class: CuriousInc\FileUploadFormTypeBundle\Service\CacheHelper
     arguments:
       - '@oneup_uploader.orphanage_manager'
+
+  curious_file_upload.service.class_helper:
+    class: CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper
+    arguments:
+      - '@curious_file_upload.service.annotation_helper'
+
+  curious_file_upload.service.annotation_helper:
+    class: CuriousInc\FileUploadFormTypeBundle\Service\AnnotationHelper
+    arguments:
+      - '@?annotations.reader'
+
+  curious_file_upload.migrator.media_bundle:
+    class: CuriousInc\FileUploadFormTypeBundle\Migration\MediaBundleMigrator
+    arguments:
+      - '@service_container'
+      - '@doctrine.orm.entity_manager'
+      - '@curious_file_upload.file_namer'
+      - '@curious_file_upload.service.annotation_helper'
+      - '@curious_file_upload.service.class_helper'

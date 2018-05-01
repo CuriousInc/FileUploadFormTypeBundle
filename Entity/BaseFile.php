@@ -47,7 +47,8 @@ class BaseFile implements FileInterface
 
     protected function getUploadRootDir()
     {
-        return __DIR__ . '/../../../web' . $this->getUploadDir();
+
+        return __DIR__ . '/../../../../web' . $this->getUploadDir();
     }
 
     protected function getUploadDir()
@@ -83,6 +84,14 @@ class BaseFile implements FileInterface
     public function getPath()
     {
         return $this->path;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getRelativePath()
+    {
+        return str_replace('uploads/gallery/', '', $this->getPath());
     }
 
     /**

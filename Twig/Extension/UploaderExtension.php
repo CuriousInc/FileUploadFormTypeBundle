@@ -2,11 +2,9 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Twig\Extension;
 
-use CuriousInc\FileUploadFormTypeBundle\Entity\BaseFile;
+use CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 /**
@@ -50,7 +48,7 @@ class UploaderExtension extends \Twig_Extension
 
     public function clearCache()
     {
-        $cache = $this->container->get('curious_file_upload.service.cache');
+        $cache = $this->container->get('curious_file_upload.service.cache_helper');
 
         $cache->clear();
     }
@@ -65,9 +63,9 @@ class UploaderExtension extends \Twig_Extension
      */
     public function autodetectMultiple($entity, string $property): bool
     {
-        $detector = $this->container->get('curious_file_upload.cardinality_detector');
+        $classHelper = $this->container->get('curious_file_upload.service.class_helper');
 
-        return $detector->canHaveMultiple($entity, $property);
+        return $classHelper->hasCollection($entity, $property);
     }
 
     /**

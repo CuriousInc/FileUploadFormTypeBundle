@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * Generic class, extending FOS' RestController and containing REST-utilities used by this bundle.
+ *
+ * @author Webber <webber@takken.io>
+ */
 namespace CuriousInc\FileUploadFormTypeBundle\Controller;
 
 use FOS\RestBundle\Controller\FOSRestController;

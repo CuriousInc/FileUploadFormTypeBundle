@@ -2,8 +2,7 @@
 /**
  * REST Endpoint for files
  *
- * @date   2018-02-22
- * @author webber
+ * @author Webber <webber@takken.io>
  */
 
 namespace CuriousInc\FileUploadFormTypeBundle\Controller;
@@ -102,7 +101,7 @@ class FileController extends RestController
     public function deletePersistedFileAction(Request $request)
     {
         $em = $this->getDoctrine()->getManager();
-        $cardinalityDetector = $this->get('curious_file_upload.cardinality_detector');
+        $classHelper = $this->get('curious_file_upload.service.class_helper');
 
         $id = (int)$request->get('id');
         $sourceEntityId = (string)$request->get('sourceEntityId');
@@ -115,15 +114,16 @@ class FileController extends RestController
         $targetEntity = $targetEntityRepository->find($id);
 
         // Remove the file(s) from owning entity
-        if ($cardinalityDetector->canHaveMultiple($sourceEntity, $fieldName)) {
+        if ($classHelper->hasCollection($sourceEntity, $fieldName)) {
             try {
-                $removeMethod = $this->retrieveRemoveMethod($sourceEntity, $fieldName);
-            } catch (NotImplementedException $e) {
+                $removeMethod = $classHelper->retrieveRemover($sourceEntity, $fieldName);
+            } catch (NotImplementedException $ex) {
                 return $this->createHttpForbiddenException();
             }
+
             $sourceEntity->$removeMethod($targetEntity);
         } else {
-            $setMethod = 'set' . ucfirst($fieldName);
+            $setMethod = $classHelper->retrieveSetter($sourceEntity, $fieldName);
             $sourceEntity->$setMethod(null);
         }
 
@@ -132,22 +132,5 @@ class FileController extends RestController
         $em->flush();
 
         return $this->createResponseDeletedOrNot();
-    }
-
-    private function retrieveRemoveMethod($entity, string $fieldName): string
-    {
-        $cardinalityDetector = $this->get('curious_file_upload.cardinality_detector');
-
-        $method = 'remove' . $cardinalityDetector->prepareString($fieldName);
-        if (method_exists($entity, $method)) {
-            return $method;
-        }
-
-        $method = 'remove' . ucfirst($fieldName);
-        if (method_exists($entity, $method)) {
-            return $method;
-        }
-
-        throw new NotImplementedException("Invalid domain object");
     }
 }

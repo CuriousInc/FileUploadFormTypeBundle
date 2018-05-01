@@ -7,13 +7,18 @@ use Symfony\Component\Filesystem\Filesystem;
 /**
  * Class Cache.
  */
-class Cache
+class CacheHelper
 {
     /**
      * @var \Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager
      */
     private $om;
 
+    /**
+     * CacheHelper constructor.
+     *
+     * @param \Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager $om
+     */
     public function __construct(OrphanageManager $om)
     {
         $this->om = $om;
@@ -27,10 +32,10 @@ class Cache
         $manager = $this->om->get('gallery');
         $files = $manager->getFiles();
 
-        $fileSystem = new Filesystem();
+        $fs = new Filesystem();
         /** @var \SplFileInfo $file */
         foreach ($files as $file) {
-            $fileSystem->remove($file);
+            $fs->remove($file);
         }
     }
 }

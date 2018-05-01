@@ -2,16 +2,16 @@
 /**
  * FileGallery FormType specifically for using DropzoneJs as a frontend library
  *
- * @date   2018-02-20
- * @author webber
+ * @author Webber <webber@takken.io>
  */
 
 namespace CuriousInc\FileUploadFormTypeBundle\Form\Type;
 
-use CuriousInc\FileUploadFormTypeBundle\Detector\CardinalityDetectorInterface;
 use CuriousInc\FileUploadFormTypeBundle\Exception\NotImplementedException;
 use CuriousInc\FileUploadFormTypeBundle\Form\DataTransformer\SessionFilesToEntitiesTransformer;
-use CuriousInc\FileUploadFormTypeBundle\Service\Cache;
+use CuriousInc\FileUploadFormTypeBundle\Namer\FileNamer;
+use CuriousInc\FileUploadFormTypeBundle\Service\CacheHelper;
+use CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Templating\Helper\UploaderHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
@@ -29,11 +29,14 @@ class DropzoneType extends AbstractType
     public const DEFAULT_MAX_FILES = 8;
     public const DEFAULT_MAX_SIZE  = 8;
 
-    /** @var Cache */
-    private $cache;
+    /** @var CacheHelper */
+    private $cacheHelper;
 
-    /** @var CardinalityDetectorInterface */
-    private $cardinalityDetector;
+    /** @var \CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper */
+    private $classHelper;
+
+    /** @var FileNamer */
+    private $fileNamer;
 
     /** @var UploaderHelper */
     private $uploaderHelper;
@@ -47,27 +50,20 @@ class DropzoneType extends AbstractType
     /** @var array */
     private $mapping;
 
-    /**
-     * FileGalleryDropzone constructor.
-     *
-     * @param UploaderHelper               $uploaderHelper
-     * @param OrphanageManager             $orphanageManager
-     * @param ObjectManager                $objectManager
-     * @param CardinalityDetectorInterface $cardinalityDetector
-     * @param Cache                        $cache
-     */
     public function __construct(
         UploaderHelper $uploaderHelper,
         OrphanageManager $orphanageManager,
         ObjectManager $objectManager,
-        CardinalityDetectorInterface $cardinalityDetector,
-        Cache $cache
+        ClassHelper $classHelper,
+        CacheHelper $cacheHelper,
+        FileNamer $fileNamer
     ) {
-        $this->uploaderHelper      = $uploaderHelper;
-        $this->orphanageManager    = $orphanageManager;
-        $this->objectManager       = $objectManager;
-        $this->cardinalityDetector = $cardinalityDetector;
-        $this->cache               = $cache;
+        $this->uploaderHelper   = $uploaderHelper;
+        $this->orphanageManager = $orphanageManager;
+        $this->objectManager    = $objectManager;
+        $this->classHelper      = $classHelper;
+        $this->cacheHelper      = $cacheHelper;
+        $this->fileNamer        = $fileNamer;
     }
 
     /**
@@ -78,8 +74,9 @@ class DropzoneType extends AbstractType
         $transformer = new SessionFilesToEntitiesTransformer(
             $this->objectManager,
             $this->orphanageManager,
-            $this->cardinalityDetector,
-            $this->cache,
+            $this->classHelper,
+            $this->cacheHelper,
+            $this->fileNamer,
             $options,
             $this->getMapping($options)
         );
@@ -194,7 +191,8 @@ class DropzoneType extends AbstractType
         $fieldDescriptionClassName = 'Sonata\DoctrineORMAdminBundle\Admin\FieldDescription';
         if (array_key_exists('sonata_field_description', $options)
             && class_exists($fieldDescriptionClassName)
-            && $options['sonata_field_description'] instanceof $fieldDescriptionClassName) {
+            && $options['sonata_field_description'] instanceof $fieldDescriptionClassName
+        ) {
             $this->mapping = $options['sonata_field_description']->getAssociationMapping();
         } else {
             throw new NotImplementedException('Cannot determine mapping without Sonata\\DoctrineORMAdminBundle.');
