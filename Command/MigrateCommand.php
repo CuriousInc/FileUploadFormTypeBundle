@@ -10,6 +10,7 @@ namespace CuriousInc\FileUploadFormTypeBundle\Command;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -22,9 +23,13 @@ class MigrateCommand extends ContainerAwareCommand
      */
     protected function configure()
     {
+        // Configure command
         $this
             ->setName('curious:uploadbundle:migrate')
-            ->setDescription('Migrate existing media from SonataMediaBundle to Curious FileUploadBundle.')
+            ->setDescription('Migrate existing media from SonataMediaBundle to Curious FileUploadBundle.');
+
+        // Configure arguments
+        $this
             ->addArgument(
                 'className',
                 InputArgument::REQUIRED,
@@ -45,6 +50,16 @@ class MigrateCommand extends ContainerAwareCommand
                 InputArgument::OPTIONAL,
                 'Property name describing the relation between the intersection entity and the media entity'
             );
+
+        // Configure options (always optional)
+        $this
+            ->addOption(
+                'force',
+                null,
+                InputOption::VALUE_NONE,
+                'Using this option will continue the process even if the files related to the Media objects ' . "\n"
+                . ' do not exist.'
+            );
     }
 
     /**
@@ -64,6 +79,7 @@ class MigrateCommand extends ContainerAwareCommand
         $fromProperty             = $input->getArgument('fromProperty');
         $toProperty               = $input->getArgument('toProperty');
         $fromIntersectionProperty = $input->getArgument('fromIntersectionProperty');
+        $options                  = $input->getOptions();
 
         // Check whether class exists or not
         if (!class_exists($className)) {
@@ -83,6 +99,6 @@ class MigrateCommand extends ContainerAwareCommand
 
         // Execute the migration action
         $migrator = $this->getContainer()->get('curious_file_upload.migrator.media_bundle');
-        $migrator->migrateEntity($className, $fromProperty, $toProperty, $fromIntersectionProperty);
+        $migrator->migrateEntity($className, $fromProperty, $toProperty, $fromIntersectionProperty, $options);
     }
 }

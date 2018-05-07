@@ -129,7 +129,7 @@ class ClassHelper
             return $method;
         }
 
-        throw new NotImplementedException("Invalid domain object");
+        throw new NotImplementedException("Invalid domain object.");
     }
 
     /**

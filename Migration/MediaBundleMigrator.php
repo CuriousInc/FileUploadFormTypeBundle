@@ -5,8 +5,9 @@
  * Migrates data from SonataMediaBundle to work with CuriousUploadBundle.
  *
  * The Entity that owns the media will be referred to as `Owning Entity` or `owner`.
- * The old media will be referred to as `Media` or `media object`.
- * The new media will be referred to as `File` or `file object`.
+ *
+ * The old media will be referred to as `Media` or `Media object`.
+ * The new media will be referred to as `BaseFile` or `BaseFile object`.
  *
  * @author Webber <webber@takken.io>
  */
@@ -71,18 +72,28 @@ class MediaBundleMigrator
      * @param string      $toProperty               The property containing the reference to CuriousUploadBundle
      * @param string|null $fromIntersectionProperty The property of the intersection entity containing the reference to
      *                                              the Media entity
+     * @param array       $options                  The options used when running this command
      */
     public function migrateEntity(
         string $entityClassName,
         string $fromProperty,
         string $toProperty,
-        ?string $fromIntersectionProperty
+        ?string $fromIntersectionProperty,
+        array $options
     ): void {
+        $force = $options['force'];
 
         // Get a collection of all instances of given Entity
-        $ownerName        = $this->classHelper->getShortClassName($entityClassName);
-        $entityRepository = $this->em->getRepository($entityClassName);
-        $owners           = $entityRepository->findAll();
+        $ownerName            = $this->classHelper->getShortClassName($entityClassName);
+        $entityRepository     = $this->em->getRepository($entityClassName);
+        $owners               = $entityRepository->findAll();
+
+        // Initialise counters
+        $ownerCount           = \count($owners);
+        $nonExistentFileCount = 0;
+        $existentFileCount    = 0;
+        $mediaObjectCount     = 0;
+        $missingLinkCount     = 0;
 
         // Handle multiple or single Media objects per owning entity?
         $this->propertyHoldsCollection = $this->classHelper->hasCollection($entityClassName, $toProperty);
@@ -93,20 +104,24 @@ class MediaBundleMigrator
         }
 
         // Initial stats
-        echo "\n" .
-             'Found ' . \count($owners) . ' instances of class ' . $ownerName . "\n" .
-             'Each ' . $ownerName . ' ' .
-             'holds ' . ($this->propertyHoldsCollection ? 'a collection' : 'a single media file') . "\n" .
-             "\n";
+        print "\n" .
+              "Found $ownerCount instances of class $ownerName\n" .
+              "Each $ownerName holds " .
+              ($this->propertyHoldsCollection ? 'a collection' : 'a single media file') . ".\n" .
+              "\n";
 
         // Go through all domain objects to migrate from Media to BaseFile
         foreach ($owners as $owner) {
+            $ownerId = $owner->getId();
+            print "Marking Media from $ownerName ($ownerId) for migration.\n";
+
             // Get an array with a single or multiple Media objects
             if ($this->propertyHoldsCollection) {
                 $mediaObjects = $this->getMediaObjectCollection($owner, $fromProperty, $fromIntersectionProperty);
             } else {
                 $mediaObjects = [$this->getSingleMediaObject($owner, $fromProperty)];
             }
+            $mediaObjectCount += \count($mediaObjects);
 
             // Skip entity if it has no linked Media objects.
             if (empty($mediaObjects)) {
@@ -117,70 +132,101 @@ class MediaBundleMigrator
             foreach ($mediaObjects as $mediaObject) {
                 // Skip links to Media that do not exist anymore
                 if (null === $mediaObject) {
-                    dump(
-                        sprintf(
-                            'Link to a Media file missing for %s %s. Skipping null value.',
-                            $ownerName,
-                            $owner->getId()
-                        )
+                    $missingLinkCount += 1;
+                    sprintf(
+                        'Link to a Media file missing for %s %s. Skipping null value.',
+                        $ownerName,
+                        $owner->getId()
                     );
-                    dump('skipping null value in : array looks like this:::', $mediaObjects);
+
                     continue;
                 }
 
-                $this->migrateMedia($owner, $fromProperty, $toProperty, $mediaObject);
+                print "Creating BaseFile from Media\n";
+                $newFile = $this->createFileFromMedia($owner, $toProperty, $mediaObject);
+                if (null === $newFile) {
+                    print "The file in Media does not exist.\n";
+                    $nonExistentFileCount += 1;
+                    continue;
+                }
+
+                $existentFileCount += 1;
+                print "Created new BaseFile from Media\n";
+            }
+
+            // Mark the old data for removal for this owning object
+            if ($this->propertyHoldsCollection) {
+                print "marking media collection and intersection collection from owner for removal\n";
+                $this->removeMediaCollectionFromOwner($owner, $fromProperty, $fromIntersectionProperty);
+            } else {
+                print "marking media object from owner for removal\n";
+                $this->removeMediaObjectFromOwner($owner, $fromProperty, $mediaObject);
             }
         }
 
-        dump('end transaction');
+        print "\n"
+              . "#######################################################################\n"
+              . "# Summary:\n"
+              . "# --------\n"
+              . "# Processed $ownerCount instances of class $ownerName which hold "
+              . ($this->propertyHoldsCollection ? "a collection" : "a single media file") . " each.\n"
+              . "# \n"
+              . "# Number of Media objects to migrate: $mediaObjectCount\n"
+              . "# \n"
+              . "# Missing links: $missingLinkCount\n"
+              . "# Non-existent files: $nonExistentFileCount\n"
+              . "# Existent files: $existentFileCount\n"
+              . "#######################################################################\n";
+
+        if ($force) {
+            print "\nPersisting changes to database\n";
+            $this->em->flush();
+        }
+
+        print "\nend transaction\n";
     }
 
     /**
-     * Migrate the data of a Media Entity class to a File entity class, owned by an `owning` Entity class.
+     * Migrate the data of a Media Entity class to a BaseFile entity class, owned by an `owning` Entity class.
      *
-     * @param mixed          $entity       The Entity that owns the old media objects, and will own the new file objects
-     * @param string         $fromProperty The property referencing the Media Entity
-     * @param string         $toProperty   The property referencing File Entity
-     * @param MediaInterface $mediaObject  A reference to a Media object, owned by the entity
+     * @param mixed          $entity      The Entity that owns the old media objects, and will own the new file objects
+     * @param string         $toProperty  The property referencing BaseFile Entity
+     * @param MediaInterface $mediaObject A reference to a Media object, owned by the entity
+     *
+     * @return BaseFile|null The newly created BaseFile object or null if it wasn't created.
      */
-    private function migrateMedia($entity, string $fromProperty, string $toProperty, MediaInterface $mediaObject): void
+    private function createFileFromMedia($entity, string $toProperty, MediaInterface $mediaObject): ?BaseFile
     {
         // Get the path for the Media object
         $mediaFilePath = $this->getMediaPath($mediaObject);
 
-        // Create a new File object
+        // Create a new BaseFile object
         try {
             $fileObject   = $this->createFileObjectFromMedia($entity, $toProperty, $mediaObject);
             $fileFullPath = $this->getFullPathFromFile($fileObject);
-            $this->fs->copy($mediaFilePath, $fileFullPath);
+            $this->fs->copy($mediaFilePath, $fileFullPath, true);
         } catch (FileNotFoundException $ex) {
-            dump(
-                sprintf(
-                    'Physical file %s does not exist in %s %s, skipping.',
-                    $mediaFilePath,
-                    $this->classHelper->getShortClassName($entity),
-                    $entity->getId()
-                )
+            sprintf(
+                'Physical file %s does not exist in %s %s, skipping. Reason: %s.',
+                $mediaFilePath,
+                $this->classHelper->getShortClassName($entity),
+                $entity->getId(),
+                $ex->getMessage()
             );
 
-            return;
+            return null;
         }
 
-        // Link the File object to the owner
+        // Link the BaseFile object to the owner
         $this->linkFileObjectToOwner($entity, $toProperty, $fileObject);
-        $newId = $fileObject->getId();
 
-        // Unlink the Media object from the owner
-        $oldId = $mediaObject->getId();
-        $this->unlinkMediaObjectFromOwner($entity, $fromProperty, $mediaObject);
+        print "Created new $toProperty.";
 
-        // Report progress
-        // TODO - check whether this progress report is given
-        dump("migrated $fromProperty $oldId to $toProperty $newId.");
+        return $fileObject;
     }
 
     /**
-     * Create File object from the Media object
+     * Create BaseFile object from the Media object
      *
      * @param mixed          $entity
      * @param string         $toProperty
@@ -198,13 +244,12 @@ class MediaBundleMigrator
         $filename         = $media->getMetadataValue('filename');
         $path             = $this->fileNamer->generateFilePath($owningEntityName, $toProperty, $filename);
 
-        // Create and save File object
+        // Create and save BaseFile object
         /** @var BaseFile $fileObject */
         $fileObject = new $targetEntity();
         $fileObject->setPath($path);
-        $this->em->persist($fileObject);
 
-        $this->em->flush();
+        $this->em->persist($fileObject);
 
         return $fileObject;
     }
@@ -284,11 +329,11 @@ class MediaBundleMigrator
     }
 
     /**
-     * Get the full path for the File object.
+     * Get the full path for the BaseFile object.
      *
      * @param \CuriousInc\FileUploadFormTypeBundle\Entity\BaseFile $fileObject
      *
-     * @return string the full path for the File object
+     * @return string the full path for the BaseFile object
      */
     private function getFullPathFromFile(BaseFile $fileObject)
     {
@@ -296,52 +341,78 @@ class MediaBundleMigrator
     }
 
     /**
-     * Link the File object to the owner that owned the Media object.
+     * Link the BaseFile object to the owner that owned the Media object.
      *
      * @param mixed    $entity     The domain object owning the Media object
-     * @param string   $toProperty The Entity's property relating to the File entity
+     * @param string   $toProperty The Entity's property relating to the BaseFile entity
      * @param BaseFile $fileObject The file object
      */
     private function linkFileObjectToOwner($entity, string $toProperty, BaseFile $fileObject): void
     {
         if ($this->propertyHoldsCollection) {
-            // Add File object to properties collection
+            // Add BaseFile object to properties collection
             $addMethod = $this->classHelper->retrieveAdder($entity, $toProperty);
             $entity->$addMethod($fileObject);
         } else {
-            // Add File object to property
+            // Add BaseFile object to property
             $setMethod = $this->classHelper->retrieveSetter($entity, $toProperty);
             $entity->$setMethod($fileObject);
         }
 
         $this->em->persist($entity);
-
-        $this->em->flush();
     }
 
     /**
-     * Unlink the Media object from the owner that now owns the File object.
+     * Unlink the Media object from the owner that now owns the BaseFile object.
      *
      * @param mixed          $entity       The domain object owning the Media object
      * @param string         $fromProperty The Entity's property relating to the Media entity
      * @param MediaInterface $mediaObject  The file object
      */
-    private function unlinkMediaObjectFromOwner($entity, string $fromProperty, MediaInterface $mediaObject): void
+    private function removeMediaObjectFromOwner($entity, string $fromProperty, MediaInterface $mediaObject): void
     {
-        if ($this->propertyHoldsCollection) {
-            // Remove File object from properties collection
-            $removeMethod = $this->classHelper->retrieveRemover($entity, $fromProperty);
-            $entity->$removeMethod($mediaObject);
-        } else {
-            // Remove File object from property
-            $setMethod = $this->classHelper->retrieveSetter($entity, $fromProperty);
-            $entity->$setMethod(null);
-        }
+        // Remove Media object from property
+        $setMethod = $this->classHelper->retrieveSetter($entity, $fromProperty);
+        $entity->$setMethod(null);
 
         $this->em->persist($entity);
 
         $this->em->remove($mediaObject);
+    }
 
-        $this->em->flush();
+    /**
+     * @param        $entity
+     * @param string $fromProperty
+     * @param string $fromIntersectionProperty
+     */
+    private function removeMediaCollectionFromOwner($entity, string $fromProperty, string $fromIntersectionProperty)
+    {
+        // Get intersection entities
+        $getMethod            = $this->classHelper->retrieveGetter($entity, $fromProperty);
+        $intersectionEntities = $entity->$getMethod();
+        print 'intersection entities to iterate `' . \count($intersectionEntities) . '`' . "\n";
+
+        // Remove each Intersection and the media that it holds
+        foreach ($intersectionEntities as $intersectionEntity) {
+            // Get the media object for the intersection (one per)
+            $getMediaMethod = $this->classHelper->retrieveGetter($intersectionEntity, $fromIntersectionProperty);
+            $mediaObject    = $intersectionEntity->$getMediaMethod();
+
+            print 'about to remove intersection Entity of type '
+                  . '`' . $this->classHelper->getShortClassName($intersectionEntity) . '`' . "\n";
+
+            // Unlink the intersection from the owning entity
+            $removeIntersectionMethod = $this->classHelper->retrieveRemover($entity, $fromProperty);
+            $entity->$removeIntersectionMethod($intersectionEntity);
+            $this->em->remove($intersectionEntity);
+            print 'marked intersection object for removal' . "\n";
+
+            if (null !== $mediaObject) {
+                $this->em->remove($mediaObject);
+                print 'marked media object for removal' . "\n";
+            } else {
+                print 'skipped non-existent media object' . "\n";
+            }
+        }
     }
 }
