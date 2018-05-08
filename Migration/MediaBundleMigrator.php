@@ -152,15 +152,18 @@ class MediaBundleMigrator
 
                 $existentFileCount += 1;
                 print "Created new BaseFile from Media\n";
+
+                // Mark the old data object for removal for this owning object
+                if (!$this->propertyHoldsCollection) {
+                    print "marking media object from owner for removal\n";
+                    $this->removeMediaObjectFromOwner($owner, $fromProperty, $mediaObject);
+                }
             }
 
-            // Mark the old data for removal for this owning object
+            // Mark the old data collection for removal for this owning object
             if ($this->propertyHoldsCollection) {
                 print "marking media collection and intersection collection from owner for removal\n";
                 $this->removeMediaCollectionFromOwner($owner, $fromProperty, $fromIntersectionProperty);
-            } else {
-                print "marking media object from owner for removal\n";
-                $this->removeMediaObjectFromOwner($owner, $fromProperty, $mediaObject);
             }
         }
 
@@ -220,7 +223,7 @@ class MediaBundleMigrator
         // Link the BaseFile object to the owner
         $this->linkFileObjectToOwner($entity, $toProperty, $fileObject);
 
-        print "Created new $toProperty.";
+        print "Created new $toProperty.\n";
 
         return $fileObject;
     }
