@@ -111,7 +111,7 @@
                       id: file.id,
                       sourceEntity: '{{ mapping.sourceEntity|escape('js') }}',
                       sourceEntityId: '{{ form.parent.vars.data.id|escape('js') }}',
-                      fieldName: '{{ mapping.fieldName|escape('js') }}',
+                      fieldName: '{{ form.vars.name|escape('js') }}',
                       targetEntity: '{{ mapping.targetEntity|escape('js') }}',
                     });
                   } else {
