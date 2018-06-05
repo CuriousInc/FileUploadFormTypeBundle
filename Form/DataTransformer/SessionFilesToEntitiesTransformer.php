@@ -18,7 +18,9 @@ use CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
+use Oneup\UploaderBundle\Uploader\Storage\FilesystemOrphanageStorage;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Finder\SplFileInfo;
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
 
@@ -96,18 +98,18 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         $options,
         $mapping
     ) {
-        $this->om                     = $om;
-        $this->orphanageManager       = $orphanageManager;
-        $this->classHelper            = $classHelper;
-        $this->cacheHelper            = $cacheHelper;
-        $this->fileNamer              = $namer;
-        $this->sourceEntity           = $mapping['sourceEntity'];
+        $this->om = $om;
+        $this->orphanageManager = $orphanageManager;
+        $this->classHelper = $classHelper;
+        $this->cacheHelper = $cacheHelper;
+        $this->fileNamer = $namer;
+        $this->sourceEntity = $mapping['sourceEntity'];
         $this->sourceEntityRepository = $this->om->getRepository($this->sourceEntity);
-        $this->fieldName              = $mapping['fieldName'];
-        $this->targetEntity           = $mapping['targetEntity'];
+        $this->fieldName = $mapping['fieldName'];
+        $this->targetEntity = $mapping['targetEntity'];
         $this->targetEntityRepository = $this->om->getRepository($this->targetEntity);
-        $this->options                = $options;
-        $this->mapping                = $mapping;
+        $this->options = $options;
+        $this->mapping = $mapping;
     }
 
     /**
@@ -156,11 +158,14 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         $uploadedFiles = null;
         // Get necessary information from the request
         $this->owningEntityObject = $this->sourceEntityRepository->find($_REQUEST['entity_id']);
-        $this->mode               = null === $this->owningEntityObject ? 'create' : 'edit';
+        $this->mode = null === $this->owningEntityObject ? 'create' : 'edit';
         // Get the files that are uploaded in current session
+        /** @var FilesystemOrphanageStorage $manager */
         $manager = $this->orphanageManager->get('gallery');
-        // Finder (iterable) that points to the current gallery
-        $uploadedFiles = $manager->getFiles();
+        // Finder (iterable) that points to the current gallery, only including the properties directory
+        $uploadedFiles = $manager->getFiles()->filter(function (SplFileInfo $file) {
+            return false !== \strpos($file->getRelativePath(), $this->fieldName, -\strlen($this->fieldName));
+        });
 
         try {
             // Process uploaded and existing files
@@ -169,8 +174,8 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
             // Catch exception and turn it into a transformationFailedException
             $exception = new TransformationFailedException($ex->getMessage(), $ex->getCode());
         } finally {
-            // Clear the files in gallery
-            $this->cacheHelper->clear();
+            // Clear the files in gallery, for this field
+            $this->cacheHelper->clear($this->fieldName);
         }
 
         // Throw exception if any was given
@@ -189,10 +194,10 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
 
     private function reverseTransformUploadedAndExistingFiles(Finder $uploadedFiles, array $existingFiles)
     {
-        $data              = [];
+        $data = [];
         $uploadedFileCount = \count($uploadedFiles);
         $existingFileCount = \count($existingFiles);
-        $totalFileCount    = $uploadedFileCount + $existingFileCount;
+        $totalFileCount = $uploadedFileCount + $existingFileCount;
 
         if ($totalFileCount > $this->getMaxFiles()) {
             // Single files only
@@ -220,7 +225,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
             foreach ($uploadedFiles as $uploadedFile) {
                 $data[] = $this->processFile($uploadedFile);
             }
-            $this->cacheHelper->clear();
+            $this->cacheHelper->clear($this->fieldName);
         }
 
         return $data;
@@ -258,7 +263,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         $data = null;
 
         $splitSourceEntity = explode('\\', $this->mapping['sourceEntity']);
-        $entityClassName   = end($splitSourceEntity);
+        $entityClassName = end($splitSourceEntity);
 
         $path = $this->fileNamer->generateFilePath(
             $entityClassName,
