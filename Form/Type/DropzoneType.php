@@ -184,10 +184,6 @@ class DropzoneType extends AbstractType
      */
     private function getMapping(array $options): array
     {
-        if (null !== $this->mapping) {
-            return $this->mapping;
-        }
-
         $fieldDescriptionClassName = 'Sonata\DoctrineORMAdminBundle\Admin\FieldDescription';
         if (array_key_exists('sonata_field_description', $options)
             && class_exists($fieldDescriptionClassName)
