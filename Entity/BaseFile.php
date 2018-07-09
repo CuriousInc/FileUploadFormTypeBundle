@@ -113,7 +113,7 @@ class BaseFile implements FileInterface
      */
     public function getSize()
     {
-        return filesize($this->getPath()) ?? 0;
+        return is_file($this->getPath()) ? filesize($this->getPath()) : 0;
     }
 
     public function getWebPath()
