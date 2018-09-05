@@ -15,6 +15,7 @@ use CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Templating\Helper\UploaderHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
@@ -50,13 +51,16 @@ class DropzoneType extends AbstractType
     /** @var array */
     private $mapping;
 
+    protected $container;
+
     public function __construct(
         UploaderHelper $uploaderHelper,
         OrphanageManager $orphanageManager,
         ObjectManager $objectManager,
         ClassHelper $classHelper,
         CacheHelper $cacheHelper,
-        FileNamer $fileNamer
+        FileNamer $fileNamer,
+        ContainerInterface $container
     ) {
         $this->uploaderHelper   = $uploaderHelper;
         $this->orphanageManager = $orphanageManager;
@@ -64,6 +68,7 @@ class DropzoneType extends AbstractType
         $this->classHelper      = $classHelper;
         $this->cacheHelper      = $cacheHelper;
         $this->fileNamer        = $fileNamer;
+        $this->container        = $container;
     }
 
     /**
@@ -71,6 +76,11 @@ class DropzoneType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
+        //if request submitted by ajax
+        if ($this->container->get('request_stack')->getCurrentRequest()->isXmlHttpRequest()) {
+            return null;
+        }
+
         $transformer = new SessionFilesToEntitiesTransformer(
             $this->objectManager,
             $this->orphanageManager,
