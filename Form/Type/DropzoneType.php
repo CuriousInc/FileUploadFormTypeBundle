@@ -19,6 +19,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -50,13 +51,16 @@ class DropzoneType extends AbstractType
     /** @var array */
     private $mapping;
 
+    protected $requestStack;
+
     public function __construct(
         UploaderHelper $uploaderHelper,
         OrphanageManager $orphanageManager,
         ObjectManager $objectManager,
         ClassHelper $classHelper,
         CacheHelper $cacheHelper,
-        FileNamer $fileNamer
+        FileNamer $fileNamer,
+        RequestStack $requestStack
     ) {
         $this->uploaderHelper   = $uploaderHelper;
         $this->orphanageManager = $orphanageManager;
@@ -64,6 +68,7 @@ class DropzoneType extends AbstractType
         $this->classHelper      = $classHelper;
         $this->cacheHelper      = $cacheHelper;
         $this->fileNamer        = $fileNamer;
+        $this->requestStack     = $requestStack;
     }
 
     /**
@@ -71,6 +76,11 @@ class DropzoneType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
+        //if request submitted by ajax
+        if ($this->requestStack->getCurrentRequest()->isXmlHttpRequest()) {
+            return null;
+        }
+
         $transformer = new SessionFilesToEntitiesTransformer(
             $this->objectManager,
             $this->orphanageManager,

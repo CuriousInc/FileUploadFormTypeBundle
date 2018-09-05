@@ -8,6 +8,7 @@ services:
       - '@curious_file_upload.service.class_helper'
       - '@curious_file_upload.service.cache_helper'
       - '@curious_file_upload.file_namer'
+      - '@request_stack'
     tags:
         - { name: form.type, alias: dropzone }
 
