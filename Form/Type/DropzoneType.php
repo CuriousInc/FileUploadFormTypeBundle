@@ -15,11 +15,11 @@ use CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Templating\Helper\UploaderHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -51,7 +51,7 @@ class DropzoneType extends AbstractType
     /** @var array */
     private $mapping;
 
-    protected $container;
+    protected $requestStack;
 
     public function __construct(
         UploaderHelper $uploaderHelper,
@@ -60,7 +60,7 @@ class DropzoneType extends AbstractType
         ClassHelper $classHelper,
         CacheHelper $cacheHelper,
         FileNamer $fileNamer,
-        ContainerInterface $container
+        RequestStack $requestStack
     ) {
         $this->uploaderHelper   = $uploaderHelper;
         $this->orphanageManager = $orphanageManager;
@@ -68,7 +68,7 @@ class DropzoneType extends AbstractType
         $this->classHelper      = $classHelper;
         $this->cacheHelper      = $cacheHelper;
         $this->fileNamer        = $fileNamer;
-        $this->container        = $container;
+        $this->requestStack     = $requestStack;
     }
 
     /**
@@ -77,7 +77,7 @@ class DropzoneType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         //if request submitted by ajax
-        if ($this->container->get('request_stack')->getCurrentRequest()->isXmlHttpRequest()) {
+        if ($this->requestStack->getCurrentRequest()->isXmlHttpRequest()) {
             return null;
         }
 
