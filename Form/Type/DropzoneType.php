@@ -111,6 +111,9 @@ class DropzoneType extends AbstractType
      */
     public function configureOptions(OptionsResolver $resolver)
     {
+        //please be patient
+        $fieldType = $this->requestStack->getCurrentRequest()->get('_route') == 'admin_cms3_core_ticket_edit' ? 'crop' : 'form_widget';
+
         $resolver->setDefaults(
             [
                 'attr' => [
@@ -120,11 +123,11 @@ class DropzoneType extends AbstractType
                 'multiple' => 'autodetect',
                 'maxFiles' => static::DEFAULT_MAX_FILES,
                 'maxFileSize' => static::DEFAULT_MAX_SIZE,
-                'type' => 'form_widget',
+                'type' => $fieldType,
                 'btnClass' => 'btn btn-info btn-lg',
                 'btnText' => 'Files',
                 'uploaderText' => 'Drop files here to upload',
-                'style_type' => 'style_default',
+                'style_type' => 'style_cropper',
                 'acceptedFiles' => '.jpeg,.jpg,.png,.gif,.JPEG,.JPG,.PNG,.GIF',
                 'compound' => 'true',
                 'deletingAllowed' => true,
