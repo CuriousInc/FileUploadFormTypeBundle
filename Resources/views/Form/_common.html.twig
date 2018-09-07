@@ -21,9 +21,8 @@
 
     {% if form.vars.type == 'crop' %}
     jQuery.getScript("{{ asset('bundles/curiousincfileuploadformtype/js/cropper.min.js') }}").done(
-    {% else %}
-    jQuery.getScript("{{ asset('bundles/curiousincfileuploadformtype/js/dropzone.js') }}",
     {% endif %}
+    jQuery.getScript("{{ asset('bundles/curiousincfileuploadformtype/js/dropzone.js') }}",
       function() {
         Dropzone.autoDiscover = false;
         var form = $('[name={{ form.parent.vars.name }}]').length > 0 ? $('[name={{ form.parent.vars.name }}]') : $('body > div.wrapper > div > section.content > div > form');
@@ -179,7 +178,7 @@
               {# Mark the upload as complete to remove progress bar #}
               this.options.complete.call(this, mockFile);
               {% endif %}
-              {% if form.vars.type=='crop' %}
+              {% if form.vars.type == 'crop' %}
               var dataURItoBlob = function(dataURI) {
                 var byteString = atob(dataURI.split(',')[1]);
                 var ab = new ArrayBuffer(byteString.length);
@@ -192,16 +191,20 @@
               var c = 0;
 
               this.on('success', function(file) {
-                var $button = $('<a href="#" class="js-open-cropper-modal" data-file-name="' + file.name + '" data-remove-file-name="' + file.removeName + '">Crop & Upload</a>');
-                $(file.previewElement).append($button);
+                var reader = new FileReader();
+                reader.onloadend = function () {
+                  var $button = $('<a href="#" class="js-open-cropper-modal" data-file-name="' + reader.result + '" data-orig-file-name="' + file.name + '">Crop & Upload</a>');
+                  $(file.previewElement).append($button);
+                };
+                reader.readAsDataURL(file);
               });
 
               $('#{{ form.vars.id }}').on('click', '.js-open-cropper-modal', function(e) {
                 e.preventDefault();
                 var fileName = $(this).data('file-name');
-                var removeFileName = $(this).data('remove-file-name');
-                var url = location.protocol + '//' + location.hostname + '/uploads/gallery/' + fileName;
-                var altUrl = location.protocol + '//' + location.hostname + '/upload/files/get/' + removeFileName;
+                var origFileName = $(this).data('orig-file-name');
+
+                var url = fileName;
                 var modalTemplate =
                       '<div id="cropper-modal" class="modal fade" tabindex="-1" role="dialog">' +
                       '<div class="modal-dialog modal-lg" role="document">' +
@@ -212,7 +215,7 @@
                       '</div>' +
                       '<div class="modal-body">' +
                       '<div class="image-container">' +
-                      '<img id="img-' + ++c + '" src="' + url + '" onerror="this.onerror=null;this.src=altUrl;">' +
+                      '<img id="img-' + ++c + '" src="' + url + '">' +
                       '</div>' +
                       '</div>' +
                       '<div class="modal-footer">' +
@@ -244,12 +247,12 @@
                       var blob = cropper.getCroppedCanvas().toDataURL();
                       {# Transform it to Blob object #}
                       var croppedFile = dataURItoBlob(blob);
-                      croppedFile.name = fileName;
+                      croppedFile.name = origFileName;
                       var dropzone = Dropzone.forElement({{ form.vars.id }}[0]);
                       var files = dropzone.getAcceptedFiles();
                       for (var i = 0; i < files.length; i++) {
                         var file = files[i];
-                        if (file.name === fileName) {
+                        if (file.name === origFileName) {
                           dropzone.removeFile(file);
                         }
                       }
@@ -282,6 +285,10 @@
             },
           }
         );
-      });
+      })
+    {% if form.vars.type == 'crop' %}
+    )
+    {% endif %}
+    ;
   </script>
 {% endif %}
