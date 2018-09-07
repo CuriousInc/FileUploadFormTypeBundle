@@ -215,7 +215,7 @@
                       '</div>' +
                       '<div class="modal-body">' +
                       '<div class="image-container">' +
-                      '<img id="img-' + ++c + '" src="' + url + '">' +
+                      '<img id="{{ form.vars.name }}-img-' + ++c + '" src="' + url + '">' +
                       '</div>' +
                       '</div>' +
                       '<div class="modal-footer">' +
@@ -234,7 +234,7 @@
                 var $cropperModal = $(modalTemplate);
 
                 $cropperModal.modal('show').on("shown.bs.modal", function() {
-                  var cropper = new Cropper(document.getElementById('img-' + c), {
+                  var cropper = new Cropper(document.getElementById('{{ form.vars.name }}-img-' + c), {
                     autoCropArea: 1,
                     movable: false,
                     cropBoxResizable: true,
