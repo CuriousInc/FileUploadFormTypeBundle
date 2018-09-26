@@ -203,7 +203,6 @@
                 e.preventDefault();
                 var fileName = $(this).data('file-name');
                 var origFileName = $(this).data('orig-file-name');
-
                 var url = fileName;
                 var modalTemplate =
                       '<div id="cropper-modal" class="modal fade" tabindex="-1" role="dialog">' +
@@ -286,9 +285,6 @@
           }
         );
       })
-    {% if form.vars.type == 'crop' %}
-    )
-    {% endif %}
-    ;
+    {% if form.vars.type == 'crop' %}){% endif %};
   </script>
 {% endif %}
