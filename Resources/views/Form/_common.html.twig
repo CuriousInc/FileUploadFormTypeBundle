@@ -126,6 +126,7 @@
                 }
               });
 
+              var fileUrl = [];
 
               {% if object is defined and object is not null and not simple %}
               {# Object contains multiple files #}
@@ -151,6 +152,9 @@
 
               {# Mark the upload as complete to remove progress bar #}
               this.options.complete.call(this, mockFile);
+
+              {# get fileUrl inside onthumbnail function #}
+              fileUrl['{{ file.name }}'] = '{{ asset(file.path) }}';
 
               {% endfor %}
 
@@ -197,6 +201,13 @@
                   $(file.previewElement).append($button);
                 };
                 reader.readAsDataURL(file);
+              });
+
+              this.on('thumbnail', function(file, dataUrl) {
+                if (fileUrl[file.name] !== undefined) {
+                  var $button = $('<a href="#" class="js-open-cropper-modal" data-file-name="' + fileUrl[file.name] + '" data-orig-file-name="' + file.name + '">Crop & Upload</a>');
+                  $(file.previewElement).append($button);
+                }
               });
 
               $('#{{ form.vars.id }}').on('click', '.js-open-cropper-modal', function(e) {
