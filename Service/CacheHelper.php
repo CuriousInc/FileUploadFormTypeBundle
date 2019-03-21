@@ -30,8 +30,13 @@ class CacheHelper
     /**
      * Clears all files from session orphanage.
      */
-    public function clear(string $folder = null)
+    public function clear(string $folder = null, $objectId)
     {
+
+
+        dump($objectId);
+//exit();
+
         $manager = $this->om->get('gallery');
         /** @var Finder $files */
         $files = $manager->getFiles();
@@ -43,10 +48,29 @@ class CacheHelper
             });
         }
 
+//            $fs = new Filesystem();
+//            /** @var \SplFileInfo $file */
+//            foreach ($files as $file) {
+//                dump($file->getFilename());
+//                dump(explode('.', explode('-', $file->getFilename())[1])[0]);
+//                if ($objectId) {
+//                    if (explode('.', explode('-', $file->getFilename())[1])[0] === $objectId)
+//                        $fs->remove($file);
+//                }
+//            }
+
+
+
         $fs = new Filesystem();
         /** @var \SplFileInfo $file */
         foreach ($files as $file) {
-            $fs->remove($file);
+            dump($file->getFilename());
+            dump(explode('.', explode('-', $file->getFilename())[1])[0]);
+//            if (explode('.', explode('-', $file->getFilename())[1])[0] === $objectId)
+                    $fs->remove($file);
+
         }
+
+//        exit;
     }
 }

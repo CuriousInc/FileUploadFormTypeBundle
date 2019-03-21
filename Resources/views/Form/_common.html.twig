@@ -16,7 +16,11 @@
   {%- set simple = (object.getPath is defined) -%}
   <script>
     function generateUniqueFileName() {
-      return Date.now().toString() + Math.floor(1000 + Math.random() * 0x10000).toString().substr(0, 4);
+      {% if form.vars.objectId %}
+        return Date.now().toString() + Math.floor(1000 + Math.random() * 0x10000).toString().substr(0, 4) + '-' + {{ form.vars.objectId }};
+      {% else %}
+        return Date.now().toString() + Math.floor(1000 + Math.random() * 0x10000).toString().substr(0, 4)
+      {% endif %}
     }
 
     {% if form.vars.type == 'crop' %}

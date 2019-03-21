@@ -175,7 +175,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
             $exception = new TransformationFailedException($ex->getMessage(), $ex->getCode());
         } finally {
             // Clear the files in gallery, for this field
-            $this->cacheHelper->clear($this->fieldName);
+            $this->cacheHelper->clear($this->fieldName, $this->options['objectId']);
         }
 
         // Throw exception if any was given
@@ -223,9 +223,19 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         if ($uploadedFileCount >= 1) {
             // Process files that were uploaded in this session
             foreach ($uploadedFiles as $uploadedFile) {
-                $data[] = $this->processFile($uploadedFile);
+                if ($this->options['objectId']) {
+                    if (explode('.', explode('-', $uploadedFile)[1])[0] === (string)$this->options['objectId']){
+
+                        $data[] = $this->processFile($uploadedFile);
+
+                    }
+
+                } else {
+
+                    $data[] = $this->processFile($uploadedFile);
+                }
             }
-            $this->cacheHelper->clear($this->fieldName);
+            $this->cacheHelper->clear($this->fieldName, $this->options['objectId']);
         }
 
         return $data;
