@@ -32,11 +32,6 @@ class CacheHelper
      */
     public function clear(string $folder = null, $objectId)
     {
-
-
-        dump($objectId);
-//exit();
-
         $manager = $this->om->get('gallery');
         /** @var Finder $files */
         $files = $manager->getFiles();
@@ -48,29 +43,21 @@ class CacheHelper
             });
         }
 
-//            $fs = new Filesystem();
-//            /** @var \SplFileInfo $file */
-//            foreach ($files as $file) {
-//                dump($file->getFilename());
-//                dump(explode('.', explode('-', $file->getFilename())[1])[0]);
-//                if ($objectId) {
-//                    if (explode('.', explode('-', $file->getFilename())[1])[0] === $objectId)
-//                        $fs->remove($file);
-//                }
-//            }
+        if (null === $folder) {
 
-
-
-        $fs = new Filesystem();
-        /** @var \SplFileInfo $file */
-        foreach ($files as $file) {
-            dump($file->getFilename());
-            dump(explode('.', explode('-', $file->getFilename())[1])[0]);
-//            if (explode('.', explode('-', $file->getFilename())[1])[0] === $objectId)
+            $fs = new Filesystem();
+            /** @var \SplFileInfo $file */
+            foreach ($files as $file) {
+                if (explode('.', explode('-', $file->getFilename())[1])[0] === (string)$objectId){
                     $fs->remove($file);
-
+                }
+            }
+        } else {
+            foreach ($files as $file) {
+                if (explode('.', explode('-', $file->getFilename())[1])[0] === (string)$objectId) {
+                    $fs->remove($file);
+                }
+            }
         }
-
-//        exit;
     }
 }
