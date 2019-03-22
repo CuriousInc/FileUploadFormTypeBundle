@@ -43,21 +43,27 @@ class CacheHelper
             });
         }
 
-        if (null === $folder) {
+        $fs = new Filesystem();
 
-            $fs = new Filesystem();
-            /** @var \SplFileInfo $file */
-            foreach ($files as $file) {
-                if (explode('.', explode('-', $file->getFilename())[1])[0] === (string)$objectId){
-                    $fs->remove($file);
+        if ($objectId) {
+            if (null === $folder) {
+                /** @var \SplFileInfo $file */
+                foreach ($files as $file) {
+                    if (preg_split( '/[-.]/', $file )[1] === (string)$objectId) {
+                        $fs->remove($file);
+                    }
+                }
+            } else {
+                foreach ($files as $file) {
+                    if (preg_split( '/[-.]/', $file )[1] === (string)$objectId) {
+                        $fs->remove($file);
+                    }
                 }
             }
         } else {
             foreach ($files as $file) {
-                if (explode('.', explode('-', $file->getFilename())[1])[0] === (string)$objectId) {
                     $fs->remove($file);
                 }
             }
-        }
     }
 }
