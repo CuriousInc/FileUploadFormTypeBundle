@@ -194,11 +194,11 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
 
     private function reverseTransformUploadedAndExistingFiles(Finder $uploadedFiles, array $existingFiles)
     {
-        $objectId = $this->options['objectId'];
         $data = [];
         $uploadedFileCount = \count($uploadedFiles);
         $existingFileCount = \count($existingFiles);
         $totalFileCount = $uploadedFileCount + $existingFileCount;
+        $objectId = $this->options['objectId'];
 
         if ($totalFileCount > $this->getMaxFiles()) {
             // Single files only
@@ -222,13 +222,9 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         }
 
         if ($uploadedFileCount >= 1) {
-            // Process files that were uploaded in this session
+            // Process files that were uploaded in this session, adding only images belong to the object
             foreach ($uploadedFiles as $uploadedFile) {
-                if ($objectId) {
-                    if (preg_split( '/[-.]/', $uploadedFile )[1] === (string)$objectId) {
-                       $data[] = $this->processFile($uploadedFile);
-                    }
-                } else {
+                if ($objectId === null || $objectId !== null && preg_split( '/[-.]/', $uploadedFile)[1] === (string) $objectId) {
                     $data[] = $this->processFile($uploadedFile);
                 }
             }

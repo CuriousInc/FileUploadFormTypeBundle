@@ -50,7 +50,7 @@ class UploaderExtension extends \Twig_Extension
     {
         $cache = $this->container->get('curious_file_upload.service.cache_helper');
 
-        $cache->clear(null,$objectId);
+        $cache->clear(null, $objectId);
     }
 
     /**
