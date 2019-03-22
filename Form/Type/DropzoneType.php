@@ -174,11 +174,9 @@ class DropzoneType extends AbstractType
         if (array_key_exists('deletingAllowed', $options)) {
             $view->vars['deletingAllowed'] = $options['deletingAllowed'];
         }
-
         if (array_key_exists('objectId', $options)) {
             $view->vars['objectId'] = $options['objectId'];
         }
-
         $view->vars['mapping'] = $this->getMapping($options);
     }
 

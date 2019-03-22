@@ -226,19 +226,14 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
             foreach ($uploadedFiles as $uploadedFile) {
                 if ($objectId) {
                     if (preg_split( '/[-.]/', $uploadedFile )[1] === (string)$objectId) {
-
                        $data[] = $this->processFile($uploadedFile);
-
                     }
-
                 } else {
-
                     $data[] = $this->processFile($uploadedFile);
                 }
             }
             $this->cacheHelper->clear($this->fieldName, $this->options['objectId']);
         }
-
         return $data;
     }
 

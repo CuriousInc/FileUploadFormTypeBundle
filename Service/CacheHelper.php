@@ -46,24 +46,17 @@ class CacheHelper
         $fs = new Filesystem();
 
         if ($objectId) {
-            if (null === $folder) {
-                /** @var \SplFileInfo $file */
-                foreach ($files as $file) {
-                    if (preg_split( '/[-.]/', $file )[1] === (string)$objectId) {
-                        $fs->remove($file);
-                    }
-                }
-            } else {
-                foreach ($files as $file) {
-                    if (preg_split( '/[-.]/', $file )[1] === (string)$objectId) {
-                        $fs->remove($file);
-                    }
-                }
-            }
-        } else {
+            /** @var \SplFileInfo $file */
             foreach ($files as $file) {
+                if (preg_split( '/[-.]/', $file )[1] === (string)$objectId) {
                     $fs->remove($file);
                 }
             }
+        } else {
+            /** @var \SplFileInfo $file */
+            foreach ($files as $file) {
+                $fs->remove($file);
+            }
+        }
     }
 }
