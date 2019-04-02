@@ -46,11 +46,11 @@ class UploaderExtension extends \Twig_Extension
         ];
     }
 
-    public function clearCache()
+    public function clearCache($objectId)
     {
         $cache = $this->container->get('curious_file_upload.service.cache_helper');
 
-        $cache->clear();
+        $cache->clear(null, $objectId);
     }
 
     /**

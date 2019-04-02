@@ -175,7 +175,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
             $exception = new TransformationFailedException($ex->getMessage(), $ex->getCode());
         } finally {
             // Clear the files in gallery, for this field
-            $this->cacheHelper->clear($this->fieldName);
+            $this->cacheHelper->clear($this->fieldName, $this->options['objectId']);
         }
 
         // Throw exception if any was given
@@ -198,6 +198,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         $uploadedFileCount = \count($uploadedFiles);
         $existingFileCount = \count($existingFiles);
         $totalFileCount = $uploadedFileCount + $existingFileCount;
+        $objectId = $this->options['objectId'];
 
         if ($totalFileCount > $this->getMaxFiles()) {
             // Single files only
@@ -221,13 +222,14 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         }
 
         if ($uploadedFileCount >= 1) {
-            // Process files that were uploaded in this session
+            // Process files that were uploaded in this session, adding only images belong to the object
             foreach ($uploadedFiles as $uploadedFile) {
-                $data[] = $this->processFile($uploadedFile);
+                if ($objectId === null || $objectId !== null && preg_split( '/[-.]/', $uploadedFile)[1] === (string) $objectId) {
+                    $data[] = $this->processFile($uploadedFile);
+                }
             }
-            $this->cacheHelper->clear($this->fieldName);
+            $this->cacheHelper->clear($this->fieldName, $this->options['objectId']);
         }
-
         return $data;
     }
 

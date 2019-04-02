@@ -30,7 +30,7 @@ class CacheHelper
     /**
      * Clears all files from session orphanage.
      */
-    public function clear(string $folder = null)
+    public function clear(string $folder = null, $objectId)
     {
         $manager = $this->om->get('gallery');
         /** @var Finder $files */
@@ -44,9 +44,13 @@ class CacheHelper
         }
 
         $fs = new Filesystem();
+
         /** @var \SplFileInfo $file */
         foreach ($files as $file) {
-            $fs->remove($file);
+            //if objectId defined, clear temporary images only for editable object
+            if ($objectId === null || ($objectId !== null && preg_split( '/[-.]/', $file)[1] === (string) $objectId)) {
+                $fs->remove($file);
+            }
         }
     }
 }
