@@ -45,8 +45,9 @@ class FileNamer implements NamerInterface
         foreach ($path as $key => $part) {
             $isLast = $key === \count($path) - 1;
             if ($isLast && 1 === preg_match('/[a-zA-Z0-9\.\-]+/u', $part)) {
-                // FileName
-                $fileName .= $part;
+                //$fileName .= $part;
+                $objectId = strstr($part, '.', true);
+                $fileName .= date('Ymd-Hi') . '_' . $objectId . '_' . uniqid() . strstr($part, '.', false);
             } elseif (!$isLast && 1 === preg_match('/[a-zA-Z0-9\-]+/u', $part)) {
                 // Folder
                 $fileName .= $part . '/';

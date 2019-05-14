@@ -128,7 +128,7 @@ class DropzoneType extends AbstractType
                 'acceptedFiles' => '.jpeg,.jpg,.png,.gif,.JPEG,.JPG,.PNG,.GIF',
                 'compound' => 'true',
                 'deletingAllowed' => true,
-                'objectId' => null
+                'objectId' => $this->requestStack->getCurrentRequest()->get('id')
             ]
         );
     }

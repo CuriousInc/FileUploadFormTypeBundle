@@ -224,7 +224,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         if ($uploadedFileCount >= 1) {
             // Process files that were uploaded in this session, adding only images belong to the object
             foreach ($uploadedFiles as $uploadedFile) {
-                if ($objectId === null || $objectId !== null && preg_split( '/[-.]/', $uploadedFile)[1] === (string) $objectId) {
+                if ($objectId !== null && preg_split( '/[_.]/', $uploadedFile)[1] === (string) $objectId) {
                     $data[] = $this->processFile($uploadedFile);
                 }
             }
