@@ -47,8 +47,10 @@ class CacheHelper
 
         /** @var \SplFileInfo $file */
         foreach ($files as $file) {
-            //if objectId defined, clear temporary images only for editable object
-            if ($objectId === null || ($objectId !== null && preg_split( '/[-.]/', $file)[1] === (string) $objectId)) {
+            //clear temporary images only for editable object, or all objects without objectid
+            if ($objectId === null && preg_split( '/[_.]/', $file)[1] === '' ||
+                $objectId !== null && preg_split( '/[_.]/', $file)[1] === (string) $objectId)
+            {
                 $fs->remove($file);
             }
         }

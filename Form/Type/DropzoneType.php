@@ -27,7 +27,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class DropzoneType extends AbstractType
 {
-    public const DEFAULT_MAX_FILES = 8;
+    public const DEFAULT_MAX_FILES = 20;
     public const DEFAULT_MAX_SIZE  = 8;
 
     /** @var CacheHelper */
@@ -128,7 +128,7 @@ class DropzoneType extends AbstractType
                 'acceptedFiles' => '.jpeg,.jpg,.png,.gif,.JPEG,.JPG,.PNG,.GIF',
                 'compound' => 'true',
                 'deletingAllowed' => true,
-                'objectId' => null
+                'objectId' => $this->requestStack->getCurrentRequest()->get('id')
             ]
         );
     }
