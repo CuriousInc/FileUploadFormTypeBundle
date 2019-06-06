@@ -8,8 +8,6 @@
 namespace CuriousInc\FileUploadFormTypeBundle\Form\Type;
 
 use CMS3\CoreBundle\Entity\File;
-use CMS3\CoreBundle\Entity\TicketInspection;
-use CMS3\CoreBundle\Entity\TicketRepair;
 use CuriousInc\FileUploadFormTypeBundle\Exception\NotImplementedException;
 use CuriousInc\FileUploadFormTypeBundle\Form\DataTransformer\SessionFilesToEntitiesTransformer;
 use CuriousInc\FileUploadFormTypeBundle\Namer\FileNamer;
