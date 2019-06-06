@@ -7,6 +7,9 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Form\Type;
 
+use CMS3\CoreBundle\Entity\File;
+use CMS3\CoreBundle\Entity\TicketInspection;
+use CMS3\CoreBundle\Entity\TicketRepair;
 use CuriousInc\FileUploadFormTypeBundle\Exception\NotImplementedException;
 use CuriousInc\FileUploadFormTypeBundle\Form\DataTransformer\SessionFilesToEntitiesTransformer;
 use CuriousInc\FileUploadFormTypeBundle\Namer\FileNamer;
@@ -15,6 +18,7 @@ use CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper;
 use Doctrine\Common\Persistence\ObjectManager;
 use Oneup\UploaderBundle\Templating\Helper\UploaderHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
+use Sonata\DoctrineORMAdminBundle\Admin\FieldDescription;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
@@ -111,26 +115,7 @@ class DropzoneType extends AbstractType
      */
     public function configureOptions(OptionsResolver $resolver)
     {
-        $resolver->setDefaults(
-            [
-                'attr' => [
-                    'action' => $this->uploaderHelper->endpoint('gallery'),
-                    'class' => 'dropzone',
-                ],
-                'multiple' => 'autodetect',
-                'maxFiles' => static::DEFAULT_MAX_FILES,
-                'maxFileSize' => static::DEFAULT_MAX_SIZE,
-                'type' => 'form_widget',
-                'btnClass' => 'btn btn-info btn-lg',
-                'btnText' => 'Files',
-                'uploaderText' => 'Drop files here to upload',
-                'style_type' => 'style_default',
-                'acceptedFiles' => '.jpeg,.jpg,.png,.gif,.JPEG,.JPG,.PNG,.GIF',
-                'compound' => 'true',
-                'deletingAllowed' => true,
-                'objectId' => $this->requestStack->getCurrentRequest()->get('id')
-            ]
-        );
+        $resolver->setDefaults($this->getDefaultOptions());
     }
 
     /**
@@ -189,6 +174,36 @@ class DropzoneType extends AbstractType
         return 'dropzone';
     }
 
+    public function apiProccessFile($uploadedFile, $sourceEntity, $imageType) {
+        $options = $this->getDefaultOptions();
+
+        $fieldDescription = new FieldDescription();
+        $fieldDescription->setType(DropzoneType::class);
+
+        $fieldDescription->setAssociationMapping(
+            [
+                'fieldName' => $imageType,
+                'targetEntity' => File::class,
+                'sourceEntity' => $sourceEntity,
+                'type' => 8
+            ]
+        );
+
+        $options['sonata_field_description'] = $fieldDescription;
+
+        $transformer = new SessionFilesToEntitiesTransformer(
+            $this->objectManager,
+            $this->orphanageManager,
+            $this->classHelper,
+            $this->cacheHelper,
+            $this->fileNamer,
+            $options,
+            $this->getMapping($options)
+        );
+
+        return $transformer->processFile($uploadedFile);
+    }
+
     /**
      * Determine the mapping for this field, containing the owning entity, its property and the file entity.
      *
@@ -209,5 +224,26 @@ class DropzoneType extends AbstractType
         }
 
         return $this->mapping;
+    }
+
+    private function getDefaultOptions() {
+        return [
+            'attr' => [
+                'action' => $this->uploaderHelper->endpoint('gallery'),
+                'class' => 'dropzone',
+            ],
+            'multiple' => 'autodetect',
+            'maxFiles' => static::DEFAULT_MAX_FILES,
+            'maxFileSize' => static::DEFAULT_MAX_SIZE,
+            'type' => 'form_widget',
+            'btnClass' => 'btn btn-info btn-lg',
+            'btnText' => 'Files',
+            'uploaderText' => 'Drop files here to upload',
+            'style_type' => 'style_default',
+            'acceptedFiles' => '.jpeg,.jpg,.png,.gif,.JPEG,.JPG,.PNG,.GIF',
+            'compound' => 'true',
+            'deletingAllowed' => true,
+            'objectId' => $this->requestStack->getCurrentRequest()->get('id')
+        ];
     }
 }
