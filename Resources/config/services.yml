@@ -15,9 +15,9 @@ services:
   curious_file_upload.twig.uploader_extension:
     class: CuriousInc\FileUploadFormTypeBundle\Twig\Extension\UploaderExtension
     arguments:
-      - '@service_container'
       - '@oneup_uploader.orphanage_manager'
-      - '@session'
+      - '@curious_file_upload.service.class_helper'
+      - '@curious_file_upload.service.cache_helper'
       - '%oneup_uploader.orphanage%'
     tags:
         - { name: twig.extension }
