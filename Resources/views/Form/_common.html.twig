@@ -192,6 +192,10 @@
               };
               var c = 0;
 
+              var getFileNameWithoutExtension = function(filename) {
+                return filename.slice(0, (Math.max(0, filename.lastIndexOf(".")) || Infinity));
+              }
+
               this.on('success', function(file) {
                 var reader = new FileReader();
                 reader.onloadend = function () {
@@ -255,7 +259,8 @@
                       var blob = cropper.getCroppedCanvas().toDataURL();
                       {# Transform it to Blob object #}
                       var croppedFile = dataURItoBlob(blob);
-                      croppedFile.name = origFileName;
+                      {# Cropping changes the file type to PNG for robustness' sake; the file extension should match #}
+                      croppedFile.name = getFileNameWithoutExtension(origFileName) + ".png";
                       var dropzone = Dropzone.forElement({{ form.vars.id }}[0]);
                       var files = dropzone.getAcceptedFiles();
                       for (var i = 0; i < files.length; i++) {
