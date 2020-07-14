@@ -181,20 +181,32 @@
               this.options.complete.call(this, mockFile);
               {% endif %}
               {% if form.vars.type == 'crop' %}
-              var dataURItoBlob = function(dataURI) {
+              var extensionToMimeType = {
+                'jpg': 'image/jpeg',
+                'png': 'image/png'
+              }
+
+              var getFileExtension = function(filename) {
+                return filename.slice((Math.max(0, filename.lastIndexOf(".")) || Infinity) + 1);
+              }
+
+              var getMimeTypeFromExtension = function(extension) {
+                if (extensionToMimeType.hasOwnProperty(extension)) {
+                  return extensionToMimeType[extension];
+                }
+                return null;
+              }
+
+              var dataURItoBlob = function(dataURI, mimeType) {
                 var byteString = atob(dataURI.split(',')[1]);
                 var ab = new ArrayBuffer(byteString.length);
                 var ia = new Uint8Array(ab);
                 for (var i = 0; i < byteString.length; i++) {
                   ia[i] = byteString.charCodeAt(i);
                 }
-                return new Blob([ab], { type: 'image/jpeg' });
+                return new Blob([ab], { type: mimeType });
               };
               var c = 0;
-
-              var getFileNameWithoutExtension = function(filename) {
-                return filename.slice(0, (Math.max(0, filename.lastIndexOf(".")) || Infinity));
-              }
 
               this.on('success', function(file) {
                 var reader = new FileReader();
@@ -216,28 +228,42 @@
                 e.preventDefault();
                 var fileName = $(this).data('file-name');
                 var origFileName = $(this).data('orig-file-name');
+                var origFileExtension = getFileExtension(origFileName);
                 var url = fileName;
+
+                {# Only certain types of files are supported by the Javascript cropper #}
+                var isFileCroppable = extensionToMimeType.hasOwnProperty(origFileExtension);
+
                 var modalTemplate =
                       '<div id="cropper-modal" class="modal fade" tabindex="-1" role="dialog">' +
                       '<div class="modal-dialog modal-lg" role="document">' +
                       '<div class="modal-content">' +
                       '<div class="modal-header">' +
                       '<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>' +
-                      '<h4 class="modal-title">Crop</h4>' +
+                      '<h4 class="modal-title">' + (isFileCroppable ? 'Crop' : 'View') + '</h4>' +
                       '</div>' +
                       '<div class="modal-body">' +
                       '<div class="image-container">' +
-                      '<img id="{{ form.vars.name }}-img-' + ++c + '" src="' + url + '">' +
+                      '<img style="max-width:100%" id="{{ form.vars.name }}-img-' + ++c + '" src="' + url + '">' +
                       '</div>' +
                       '</div>' +
-                      '<div class="modal-footer">' +
+                      '<div class="modal-footer">';
+
+                if (true === isFileCroppable) {
+                  modalTemplate +=
                       '<button type="button" class="btn btn-warning rotate-left"><span class="fa fa-rotate-left"></span></button>' +
                       '<button type="button" class="btn btn-warning rotate-right"><span class="fa fa-rotate-right"></span></button>' +
                       '<button type="button" class="btn btn-warning scale-x" data-value="-1"><span class="fa fa-arrows-h"></span></button>' +
                       '<button type="button" class="btn btn-warning scale-y" data-value="-1"><span class="fa fa-arrows-v"></span></button>' +
                       '<button type="button" class="btn btn-warning reset"><span class="fa fa-refresh"></span></button>' +
                       '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>' +
-                      '<button type="button" class="btn btn-primary crop-upload">Open</button>' +
+                      '<button type="button" class="btn btn-primary crop-upload">Open</button>';
+                } else if (false === isFileCroppable) {
+                  modalTemplate +=
+                      '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>';
+                }
+
+                modalTemplate +=
                       '</div>' +
                       '</div>' +
                       '</div>' +
@@ -246,52 +272,54 @@
                 var $cropperModal = $(modalTemplate);
 
                 $cropperModal.modal('show').on("shown.bs.modal", function() {
-                  var cropper = new Cropper(document.getElementById('{{ form.vars.name }}-img-' + c), {
-                    autoCropArea: 1,
-                    movable: false,
-                    cropBoxResizable: true,
-                    rotatable: true,
-                  });
-                  var $this = $(this);
-                  $this
-                    .on('click', '.crop-upload', function() {
-                      {# Get cropped image data #}
-                      var blob = cropper.getCroppedCanvas().toDataURL();
-                      {# Transform it to Blob object #}
-                      var croppedFile = dataURItoBlob(blob);
-                      {# Cropping changes the file type to PNG for robustness' sake; the file extension should match #}
-                      croppedFile.name = getFileNameWithoutExtension(origFileName) + ".png";
-                      var dropzone = Dropzone.forElement({{ form.vars.id }}[0]);
-                      var files = dropzone.getAcceptedFiles();
-                      for (var i = 0; i < files.length; i++) {
-                        var file = files[i];
-                        if (file.name === origFileName) {
-                          dropzone.removeFile(file);
-                        }
-                      }
-
-                      dropzone.addFile(croppedFile);
-                      $this.modal('hide');
-                    })
-                    .on('click', '.rotate-right', function() {
-                      cropper.rotate(90);
-                    })
-                    .on('click', '.rotate-left', function() {
-                      cropper.rotate(-90);
-                    })
-                    .on('click', '.reset', function() {
-                      cropper.reset();
-                    })
-                    .on('click', '.scale-x', function() {
-                      var $this = $(this);
-                      cropper.scaleX($this.data('value'));
-                      $this.data('value', -$this.data('value'));
-                    })
-                    .on('click', '.scale-y', function() {
-                      var $this = $(this);
-                      cropper.scaleY($this.data('value'));
-                      $this.data('value', -$this.data('value'));
+                  if (true === isFileCroppable) {
+                    var cropper = new Cropper(document.getElementById('{{ form.vars.name }}-img-' + c), {
+                      autoCropArea: 1,
+                      movable: false,
+                      cropBoxResizable: true,
+                      rotatable: true,
                     });
+                    var $this = $(this);
+                    $this
+                      .on('click', '.crop-upload', function () {
+                        var origMimeType = getMimeTypeFromExtension(origFileExtension);
+                        {# Get cropped image data #}
+                        var blob = cropper.getCroppedCanvas().toDataURL(getMimeTypeFromExtension(origFileExtension));
+                        {# Transform it to Blob object #}
+                        var croppedFile = dataURItoBlob(blob, origMimeType);
+                        croppedFile.name = origFileName;
+                        var dropzone = Dropzone.forElement({{ form.vars.id }}[0]);
+                        var files = dropzone.getAcceptedFiles();
+                        for (var i = 0; i < files.length; i++) {
+                          var file = files[i];
+                          if (file.name === origFileName) {
+                            dropzone.removeFile(file);
+                          }
+                        }
+
+                        dropzone.addFile(croppedFile);
+                        $this.modal('hide');
+                      })
+                      .on('click', '.rotate-right', function () {
+                        cropper.rotate(90);
+                      })
+                      .on('click', '.rotate-left', function () {
+                        cropper.rotate(-90);
+                      })
+                      .on('click', '.reset', function () {
+                        cropper.reset();
+                      })
+                      .on('click', '.scale-x', function () {
+                        var $this = $(this);
+                        cropper.scaleX($this.data('value'));
+                        $this.data('value', -$this.data('value'));
+                      })
+                      .on('click', '.scale-y', function () {
+                        var $this = $(this);
+                        cropper.scaleY($this.data('value'));
+                        $this.data('value', -$this.data('value'));
+                      });
+                  }
                 });
               });
               {% endif %}
