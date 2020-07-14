@@ -22,7 +22,9 @@ services:
     tags:
         - { name: twig.extension }
 
+  # oneup/uploader-bundle expects this service to be public
   curious_file_upload.file_namer:
+    public: true
     class: CuriousInc\FileUploadFormTypeBundle\Namer\FileNamer
 
   curious_file_upload.service.cache_helper:
