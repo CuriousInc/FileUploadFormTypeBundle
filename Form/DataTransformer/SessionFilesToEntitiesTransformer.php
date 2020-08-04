@@ -259,7 +259,7 @@ class SessionFilesToEntitiesTransformer implements DataTransformerInterface
         return $this->classHelper->hasCollection($this->sourceEntity, $this->fieldName);
     }
 
-    private function processFile(\SplFileInfo $uploadedFile)
+    public function processFile(\SplFileInfo $uploadedFile)
     {
         // Move files to gallery location and return the corresponding domain objects
         $data = null;
