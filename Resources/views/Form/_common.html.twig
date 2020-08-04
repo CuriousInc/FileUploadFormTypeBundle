@@ -183,6 +183,7 @@
               {% if form.vars.type == 'crop' %}
               var extensionToMimeType = {
                 'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
                 'png': 'image/png'
               }
 
@@ -232,7 +233,7 @@
                 var url = fileName;
 
                 {# Only certain types of files are supported by the Javascript cropper #}
-                var isFileCroppable = extensionToMimeType.hasOwnProperty(origFileExtension);
+                var isFileCroppable = null !== getMimeTypeFromExtension(origFileExtension);
 
                 var modalTemplate =
                       '<div id="cropper-modal" class="modal fade" tabindex="-1" role="dialog">' +
