@@ -1,7 +1,7 @@
 curious_file_upload_delete_temporary:
     path: /upload/session/files/delete
-    defaults: { _controller: CuriousIncFileUploadFormTypeBundle:File:deleteSessionFile }
+    defaults: { _controller: CuriousInc\FileUploadFormTypeBundle\Controller\FileController::deleteSessionFileAction }
 
 curious_file_upload_delete_persisted:
     path: /upload/persisted/files/delete
-    defaults: { _controller: CuriousIncFileUploadFormTypeBundle:File:deletePersistedFile }
+    defaults: { _controller: CuriousInc\FileUploadFormTypeBundle\Controller\FileController::deletePersistedFileAction }
