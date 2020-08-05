@@ -1,4 +1,8 @@
 services:
+  CuriousInc\FileUploadFormTypeBundle\Controller\FileController:
+    public: true
+    tags: ['controller.service_arguments']
+
   curious_file_upload.dropzone_type:
     class: CuriousInc\FileUploadFormTypeBundle\Form\Type\DropzoneType
     arguments:
@@ -32,10 +36,12 @@ services:
     arguments:
       - '@oneup_uploader.orphanage_manager'
 
-  curious_file_upload.service.class_helper:
-    class: CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper
+  CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper:
     arguments:
       - '@curious_file_upload.service.annotation_helper'
+
+  curious_file_upload.service.class_helper:
+    alias: CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper
 
   curious_file_upload.service.annotation_helper:
     class: CuriousInc\FileUploadFormTypeBundle\Service\AnnotationHelper
@@ -46,7 +52,7 @@ services:
     class: CuriousInc\FileUploadFormTypeBundle\Migration\MediaBundleMigrator
     arguments:
       - '@service_container'
-      - '@doctrine.orm.entity_manager'
+      - '@doctrine.orm.entity_manager)'
       - '@curious_file_upload.file_namer'
       - '@curious_file_upload.service.annotation_helper'
       - '@curious_file_upload.service.class_helper'
