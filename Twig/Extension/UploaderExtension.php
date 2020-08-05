@@ -2,33 +2,32 @@
 
 namespace CuriousInc\FileUploadFormTypeBundle\Twig\Extension;
 
+use CuriousInc\FileUploadFormTypeBundle\Service\CacheHelper;
 use CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper;
 use Oneup\UploaderBundle\Uploader\Orphanage\OrphanageManager;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 /**
  * Class UploaderExtension.
  */
 class UploaderExtension extends \Twig_Extension
 {
-    protected $container;
-
     protected $orphanManager;
-
-    protected $session;
 
     protected $config;
 
+    protected $cacheHelper;
+
+    protected $classHelper;
+
     public function __construct(
-        ContainerInterface $container,
         OrphanageManager $orphanManager,
-        SessionInterface $session,
+        ClassHelper $classHelper,
+        CacheHelper $cacheHelper,
         array $config
     ) {
-        $this->container     = $container;
         $this->orphanManager = $orphanManager;
-        $this->session       = $session;
+        $this->classHelper = $classHelper;
+        $this->cacheHelper   = $cacheHelper;
         $this->config        = $config;
     }
 
@@ -48,9 +47,7 @@ class UploaderExtension extends \Twig_Extension
 
     public function clearCache($objectId)
     {
-        $cache = $this->container->get('curious_file_upload.service.cache_helper');
-
-        $cache->clear(null, $objectId);
+        $this->cacheHelper->clear(null, $objectId);
     }
 
     /**
@@ -63,9 +60,7 @@ class UploaderExtension extends \Twig_Extension
      */
     public function autodetectMultiple($entity, string $property): bool
     {
-        $classHelper = $this->container->get('curious_file_upload.service.class_helper');
-
-        return $classHelper->hasCollection($entity, $property);
+        return $this->classHelper->hasCollection($entity, $property);
     }
 
     /**

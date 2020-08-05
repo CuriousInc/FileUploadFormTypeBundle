@@ -13,6 +13,7 @@
         "doctrine/orm": "~2.4",
         "knplabs/doctrine-behaviors": "~1.1",
         "oneup/uploader-bundle": "~2.0",
+        "symfony/form": "^4.0",
         "twig/twig": "~2.1"
     },
     "autoload": {
