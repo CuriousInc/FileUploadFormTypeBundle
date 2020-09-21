@@ -9,12 +9,13 @@ namespace CuriousInc\FileUploadFormTypeBundle\Controller;
 
 use CuriousInc\FileUploadFormTypeBundle\Exception\NotImplementedException;
 use FOS\RestBundle\Controller\Annotations as Rest;
-use Nelmio\ApiDocBundle\Annotation\ApiDoc;
+use Nelmio\ApiDocBundle\Annotation\Operation;
 use Oneup\UploaderBundle\Uploader\Storage\FilesystemOrphanageStorage;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Swagger\Annotations as SWG;
 
 /**
  * Class FileController.
@@ -22,20 +23,33 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class FileController extends RestController
 {
     /**
-     * Delete a session file by its name
-     *
-     * @ApiDoc(
-     *     description="Delete a file",
-     *     section="Files",
-     *     requirements={
-     *       {"name"="name", "requirement"="[a-zA-Z\d]+"}
-     *     },
-     *     statusCodes={
-     *       204="No Content",
-     *       400="Request is not properly formatted",
-     *       403="Forbidden",
-     *       500="An error occurred while handling your request"
-     *     },
+     * @Operation(
+     *     tags={"Files"},
+     *     summary="Delete a session file by its name.",
+     *     method="post",
+     *     @SWG\Parameter(
+     *         name="name",
+     *         in="body",
+     *         description="Name of the file to delete.",
+     *         required=true,
+     *         @SWG\Schema(type="string")
+     *     ),
+     *     @SWG\Response(
+     *         response="204",
+     *         description="No Content"
+     *     ),
+     *     @SWG\Response(
+     *         response="400",
+     *         description="Request is not properly formatted"
+     *     ),
+     *     @SWG\Response(
+     *         response="403",
+     *         description="You do not have access to the wells list"
+     *     ),
+     *     @SWG\Response(
+     *         response="500",
+     *         description="An error occurred while handling your request"
+     *     )
      * )
      *
      * @param Request $request
@@ -73,23 +87,50 @@ class FileController extends RestController
     }
 
     /**
-     * Delete a persisted file by its identifier
-     *
-     * @ApiDoc(
-     *     description="Delete a file from given domain object",
-     *     section="Files",
-     *     requirements={
-     *       {"name"="id", "requirement"="[a-zA-Z\d]+"},
-     *       {"name"="sourceEntity", "requirement"="[a-zA-Z\\\d]+"},
-     *       {"name"="fieldName", "requirement"="[a-zA-Z\d]+"},
-     *       {"name"="targetEntity", "requirement"="[a-zA-Z\\\d]+"},
-     *     },
-     *     statusCodes={
-     *       204="No Content",
-     *       400="Request is not properly formatted",
-     *       403="Forbidden",
-     *       500="An error occurred while handling your request"
-     *     },
+     * @Operation(
+     *     tags={"Files"},
+     *     summary="Delete a persisted file by its identifier.",
+     *     method="post",
+     *     @SWG\Parameter(
+     *         name="id",
+     *         in="body",
+     *         required=true,
+     *         @SWG\Schema(type="string")
+     *     ),
+     *     @SWG\Parameter(
+     *         name="sourceEntity",
+     *         in="body",
+     *         required=true,
+     *         @SWG\Schema(type="string")
+     *     ),
+     *     @SWG\Parameter(
+     *         name="fieldName",
+     *         in="body",
+     *         required=true,
+     *         @SWG\Schema(type="string")
+     *     ),
+     *     @SWG\Parameter(
+     *         name="targetEntity",
+     *         in="body",
+     *         required=true,
+     *         @SWG\Schema(type="string")
+     *     ),
+     *     @SWG\Response(
+     *         response="204",
+     *         description="No Content"
+     *     ),
+     *     @SWG\Response(
+     *         response="400",
+     *         description="Request is not properly formatted"
+     *     ),
+     *     @SWG\Response(
+     *         response="403",
+     *         description="You do not have access to the wells list"
+     *     ),
+     *     @SWG\Response(
+     *         response="500",
+     *         description="An error occurred while handling your request"
+     *     )
      * )
      *
      * @param Request $request
