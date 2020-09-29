@@ -33,6 +33,7 @@ services:
       - '@oneup_uploader.orphanage_manager'
 
   curious_file_upload.service.class_helper:
+    public: true
     class: CuriousInc\FileUploadFormTypeBundle\Service\ClassHelper
     arguments:
       - '@curious_file_upload.service.annotation_helper'
