@@ -1,0 +1,8 @@
+curious_file_upload:
+    drop: Drop files here to upload.
+    modal:
+        btn_accept: Accept
+    preview:
+        close: Close
+        delete: Do you want to delete file?
+        edit: Edit

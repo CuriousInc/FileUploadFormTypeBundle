@@ -175,29 +175,36 @@
 
 .dropzone {
   min-height: 150px;
-  border: 2px solid rgba(0, 0, 0, 0.3);
+  border: 1px solid #ccc;
+  border-radius: 3px;
   background: white;
-  padding: 20px 20px; }
+  padding: 12px 4px; }
   .dropzone.dz-clickable {
     cursor: pointer; }
     .dropzone.dz-clickable * {
       cursor: default; }
     .dropzone.dz-clickable .dz-message, .dropzone.dz-clickable .dz-message * {
       cursor: pointer; }
-  .dropzone.dz-started .dz-message {
-    display: none; }
   .dropzone.dz-drag-hover {
-    border-style: solid; }
+    background-color: #BBDEFB;
+    border-color: #2196F3; }
     .dropzone.dz-drag-hover .dz-message {
-      opacity: 0.5; }
+      color: #2196F3; }
   .dropzone .dz-message {
-    text-align: center;
-    margin: 2em 0; }
+    color: #828282;
+    align-items: center;
+    display: flex;
+    margin: 12px 12px 4px; }
+  .dropzone .dz-message i {
+    font-size: 20px;
+    padding: 0 8px 0 0; }
+  .dropzone .dz-message span {
+    display: inline-block; }
   .dropzone .dz-preview {
     position: relative;
     display: inline-block;
     vertical-align: top;
-    margin: 16px;
+    margin: 16px 12px 12px;
     min-height: 100px;
     text-align: center; }
     .dropzone .dz-preview:hover {
@@ -205,12 +212,20 @@
       .dropzone .dz-preview:hover .dz-details {
         opacity: 1; }
     .dropzone .dz-preview.dz-file-preview .dz-image {
-      border-radius: 20px;
-      background: #999;
-      background: linear-gradient(to bottom, #eee, #ddd); }
+      border-radius: 3px;
+      background: #d2d6de;
+      transition: .1s }
+    .dropzone .dz-preview.dz-file-preview .dz-image:hover,
+    .dropzone .dz-preview.dz-file-preview .dz-image:active,
+    .dropzone .dz-preview.dz-file-preview .dz-image:focus {
+      background: #b3b9c6 }
+    .dropzone .dz-preview.dz-file-preview .dz-image:active {
+      box-shadow: inset 0 3px 5px rgba(0,0,0,0.125);
+    }
     .dropzone .dz-preview.dz-file-preview .dz-details {
       opacity: 1; }
     .dropzone .dz-preview.dz-image-preview {
+      border-radius: 3px;
       background: white; }
       .dropzone .dz-preview.dz-image-preview .dz-details {
         -webkit-transition: opacity 0.2s linear;
@@ -221,19 +236,54 @@
     .dropzone .dz-preview .dz-remove, .dropzone .dz-preview .js-open-cropper-modal {
       font-size: 14px;
       text-align: center;
-      color: white;
-      display: inline-block;
-      padding: 0 5px;
-      margin: 5px;
-      border-radius: 5px;
+      color: #4b494c;
+      display: inline-block;;
+      border-radius: 3px;
       cursor: pointer;
       border: none; }
+    .dropzone .dz-placeholder {
+      cursor: pointer; }
     .dropzone .dz-preview .dz-remove {
-      background-color: #dd4b39; }
-    .dropzone .dz-preview .js-open-cropper-modal {
-      background-color: #00c0ef; }
-      .dropzone .dz-preview .dz-remove:hover, .dropzone .dz-preview .js-open-cropper-modal:hover {
-        text-decoration: underline; }
+      position: absolute;
+      z-index: 300;
+      top: -16px;
+      right: -16px;
+      width: 32px;
+      height: 32px;
+      background-color: #d2d6de;
+      border-radius: 50%;
+      transition: .1s; }
+    .dropzone .dz-preview .dz-remove:hover,
+    .dropzone .dz-preview .dz-remove:active,
+    .dropzone .dz-preview .dz-remove:focus {
+      background-color: #b3b9c6; }
+    .dropzone .dz-preview .dz-remove:active {
+      box-shadow: inset 0 3px 5px rgba(0,0,0,0.125) }
+    .dropzone .dz-preview .dz-remove .fa-times {
+      color: #be2626;
+      font-size: 20px;
+      line-height: 32px; }
+    .dropzone .dz-preview .js-open-cropper-modal, .dropzone .dz-placeholder .dz-upload-image {
+      width: 100%;
+      height: 50px;
+      line-height: 50px;
+      margin-top: 8px;
+      color: #4b494c;
+      display: flex;
+      justify-content: center;
+      border-radius: 3px;
+      background-color: #d2d6de;
+      transition: .1s; }
+    .dropzone .dz-preview .js-open-cropper-modal:hover,
+    .dropzone .dz-preview .js-open-cropper-modal:active,
+    .dropzone .dz-preview .js-open-cropper-modal:focus,
+    .dropzone .dz-placeholder .dz-upload-image:hover,
+    .dropzone .dz-placeholder .dz-upload-image:active,
+    .dropzone .dz-placeholder .dz-upload-image:focus {
+      background-color: #b3b9c6; }
+    .dropzone .dz-preview .js-open-cropper-modal:active,
+    .dropzone .dz-placeholder .dz-upload-image:active {
+      box-shadow: inset 0 3px 5px rgba(0,0,0,0.125); }
     .dropzone .dz-preview:hover .dz-details {
       opacity: 1; }
     .dropzone .dz-preview .dz-details {
@@ -266,7 +316,7 @@
         background-color: rgba(255, 255, 255, 0.4);
         padding: 0 0.4em;
         border-radius: 3px; }
-    .dropzone .dz-preview:hover .dz-image img {
+    .dropzone .dz-preview:not(.dz-placeholder):hover .dz-image img {
       -webkit-transform: scale(1.05, 1.05);
       -moz-transform: scale(1.05, 1.05);
       -ms-transform: scale(1.05, 1.05);
@@ -274,13 +324,17 @@
       transform: scale(1.05, 1.05);
       -webkit-filter: blur(8px);
       filter: blur(8px); }
+    .dropzone .dz-placeholder .dz-image img {
+      width: 80px; }
     .dropzone .dz-preview .dz-image {
-      border-radius: 20px;
+      border-radius: 3px;
       overflow: hidden;
       width: 120px;
       height: 120px;
       position: relative;
-      display: block;
+      display: flex;
+      align-content: center;
+      justify-content: center;
       z-index: 10; }
       .dropzone .dz-preview .dz-image img {
         display: block; }
