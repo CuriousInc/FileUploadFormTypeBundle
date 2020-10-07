@@ -123,7 +123,7 @@ class DropzoneType extends AbstractType
                 'type' => 'form_widget',
                 'btnClass' => 'btn btn-info btn-lg',
                 'btnText' => 'Files',
-                'uploaderText' => 'Drop files here to upload',
+                'uploaderText' => 'curious_file_upload.drop',
                 'style_type' => 'style_default',
                 'acceptedFiles' => '.jpeg,.jpg,.png,.gif,.JPEG,.JPG,.PNG,.GIF',
                 'compound' => 'true',

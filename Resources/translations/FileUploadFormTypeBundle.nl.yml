@@ -1,0 +1,8 @@
+curious_file_upload:
+    drop: Afbeeldingen kunnen ook worden toegevoegd door ze naar dit veld te slepen.
+    modal:
+        btn_accept: Accepteren
+    preview:
+        close: Sluiten
+        delete: Dit bestand verwijderen?
+        edit: Bewerken
